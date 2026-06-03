@@ -606,8 +606,9 @@ function mergeConfluence(tf4h, tf1h, tf15m, ob, curPrice, candles4h){
     {lbl:strengthLabel, dot:aligned===3?'g':aligned===2?'y':'r'},
   ];
 
-  const obPressure = ob.bids.slice(0,20).reduce((a,[p,q])=>a+(+q),0) /
-    (ob.bids.slice(0,20).reduce((a,[p,q])=>a+(+q),0)+ob.asks.slice(0,20).reduce((a,[p,q])=>a+(+q),0));
+  const _bidQty = ob.bids.slice(0,20).reduce((a,[p,q])=>a+(+q),0);
+  const _askQty = ob.asks.slice(0,20).reduce((a,[p,q])=>a+(+q),0);
+  const obPressure = _bidQty/(_bidQty+_askQty);
 
   // Tags y análisis
   const tags = [
@@ -752,9 +753,9 @@ function buildLiq(price){
   document.getElementById('liqBands').innerHTML=bands.map(b=>{
     if(!b) return '<div class="liq-now"><span class="liq-now-label">Precio actual</span><span class="liq-now-price">'+fmt(price)+'</span></div>';
     const bc=b.side==='short'?'226,75,74':'99,153,34';
-    return '<div class="liq-band" style="background:rgba('+bc+','+b.i*.12)+';"><div class="liq-band-content">'
+    return '<div class="liq-band" style="background:rgba('+bc+','+b.i*.12+');"><div class="liq-band-content">'
       +'<span class="liq-band-price">'+fmt(b.p)+'</span>'
-      +'<div style="flex:2;height:8px;border-radius:3px;margin:0 7px;background:rgba('+bc+','+b.i*.25)+';"><div style="height:100%;width:'+Math.round(b.i*100)+'%;border-radius:3px;background:rgba('+bc+','+b.i)+';"></div></div>'
+      +'<div style="flex:2;height:8px;border-radius:3px;margin:0 7px;background:rgba('+bc+','+b.i*.25+');"><div style="height:100%;width:'+Math.round(b.i*100)+'%;border-radius:3px;background:rgba('+bc+','+b.i+');"></div></div>'
       +'<span style="font-size:10px;color:'+(b.side==='short'?'#A32D2D':'#3B6D11')+';font-weight:500;width:36px;text-align:right;">'+b.val+'</span>'
       +'</div></div>';
   }).join('');
@@ -828,11 +829,11 @@ async function doAnalyze(raw){
 
     // Sincronizar heatmaps con el par
     liqHmSymbol=fullSym;
-    document.getElementById('liqHmPrice').textContent=fmt(price);
-    liqHmRefresh();
+    if(document.getElementById('liqHmPrice')) document.getElementById('liqHmPrice').textContent=fmt(price);
+    if(typeof liqHmRefresh==='function') liqHmRefresh();
     hmCurrentSymbol=fullSym;
-    document.getElementById('hmPairLbl').textContent=sym+'/USDT';
-    hmRefresh();
+    if(document.getElementById('hmPairLbl')) document.getElementById('hmPairLbl').textContent=sym+'/USDT';
+    if(typeof hmRefresh==='function') hmRefresh();
 
     clearInterval(refreshTimer);
     refreshTimer=setInterval(()=>doAnalyze(sym),30000);
@@ -855,8 +856,22 @@ document.addEventListener('click',e=>{
     document.getElementById('coinSugg').classList.remove('open');
 });
 
-window.addEventListener('load',()=>{ setTimeout(()=>doAnalyze('BTC'),600); });
+window.addEventListener('load',()=>{
+  // Small delay to ensure all functions are initialized
+  setTimeout(()=>{
+    try { doAnalyze('BTC'); } catch(e){ console.error('Init error:',e); }
+  }, 1000);
+});
 
+
+
+/* ═══════════════════════════════════════════
+   MINI HEATMAP LATERAL — alias del principal
+═══════════════════════════════════════════ */
+let hmCurrentSymbol = 'BTCUSDT';
+function hmRefresh(){ if(typeof liqHmRefresh==='function') liqHmRefresh(); }
+function hmSetTF(tf,btn){ if(typeof liqHmSetTF==='function') liqHmSetTF(tf,btn); }
+function hmTogglePool(v,btn){ if(typeof liqHmTogglePool==='function') liqHmTogglePool(v,btn); }
 
 /* ═══════════════════════════════════════════
    HEATMAP LIQUIDEZ PRINCIPAL (panel izquierdo)
