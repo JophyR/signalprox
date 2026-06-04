@@ -4,10 +4,10 @@
 .topbar { background: var(--color-background-primary); border-bottom: 0.5px solid var(--color-border-tertiary); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
 .logo { font-size: 15px; font-weight: 500; color: var(--color-text-primary); display: flex; align-items: center; gap: 8px; }
 .live-badge { font-size: 11px; padding: 2px 8px; border-radius: var(--border-radius-md); background: var(--color-background-success); color: var(--color-text-success); }
-.main { display: grid; grid-template-columns: 1fr 290px; gap: 12px; padding: 12px; }
+.main { display: grid; grid-template-columns: minmax(0,1fr) 290px; gap: 10px; padding: 10px; }
 .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 12px; }
 .card-title { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-.search-row { display: flex; gap: 8px; margin-bottom: 10px; position: relative; }
+.search-row { display: flex; gap: 8px; margin-bottom: 8px; position: relative; }
 .coin-input { flex: 1; background: var(--color-background-primary); border: 1px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 8px 12px; font-size: 14px; font-weight: 500; color: var(--color-text-primary); outline: none; }
 .coin-input:focus { border-color: #639922; }
 .coin-input::placeholder { color: var(--color-text-tertiary); font-weight: 400; }
@@ -16,17 +16,17 @@
 .coin-suggestions.open { display: block; }
 .sugg-item { padding: 7px 12px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; color: var(--color-text-primary); }
 .sugg-item:hover { background: var(--color-background-secondary); }
-.signal-banner { border-radius: var(--border-radius-lg); padding: 11px 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+.signal-banner { border-radius: var(--border-radius-lg); padding: 8px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
 .sig-long { background: #EAF3DE; border: 0.5px solid #97C459; }
 .sig-short { background: #FCEBEB; border: 0.5px solid #F09595; }
-.sig-dir { font-size: 20px; font-weight: 500; }
+.sig-dir { font-size: 16px; font-weight: 500; }
 .sig-long .sig-dir { color: #3B6D11; }
 .sig-short .sig-dir { color: #A32D2D; }
-.sig-meta { font-size: 11px; margin-top: 3px; }
+.sig-meta { font-size: 10px; margin-top: 2px; }
 .sig-long .sig-meta { color: #3B6D11; opacity:.85; }
 .sig-short .sig-meta { color: #A32D2D; opacity:.85; }
-.levels { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; margin-bottom: 10px; }
-.lv { border-radius: var(--border-radius-md); padding: 9px 8px; position: relative; }
+.levels { display: grid; grid-template-columns: repeat(5,1fr); gap: 4px; margin-bottom: 6px; overflow: hidden; }
+.lv { border-radius: var(--border-radius-md); padding: 7px 6px; position: relative; min-width: 0; }
 .lv-entry { background: var(--color-background-secondary); border: 1.5px solid #639922; }
 .lv-tp1 { background: #EAF3DE; }
 .lv-tp2 { background: #D4EDBA; border: 1px dashed #97C459; }
@@ -34,20 +34,20 @@
 .lv-low { background: #EAF3DE; border: 1.5px solid #97C459; }
 .lv-med { background: #FEF3DC; border: 1.5px solid #F5C842; }
 .lv-high { background: #FCEBEB; border: 1.5px solid #F09595; }
-.lv-lbl { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; }
+.lv-lbl { font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: .02em; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lv-entry .lv-lbl { color: #3B6D11; } .lv-tp1 .lv-lbl { color: #3B6D11; } .lv-tp2 .lv-lbl { color: #2a5a08; }
 .lv-sl .lv-lbl { color: #A32D2D; } .lv-low .lv-lbl { color: #3B6D11; } .lv-med .lv-lbl { color: #854F0B; } .lv-high .lv-lbl { color: #A32D2D; }
-.lv-val { font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
-.lv-entry .lv-val { color: #3B6D11; font-size: 13px; }
-.lv-pct { font-size: 10px; color: var(--color-text-secondary); margin-top: 1px; }
-.ia-pill { position: absolute; top: 5px; right: 5px; font-size: 9px; color: white; padding: 1px 4px; border-radius: 999px; }
-.lv-big { font-size: 18px; font-weight: 500; margin: 1px 0; }
+.lv-val { font-size: 11px; font-weight: 600; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lv-entry .lv-val { color: #3B6D11; font-size: 11px; }
+.lv-pct { font-size: 9px; color: var(--color-text-secondary); margin-top: 1px; }
+.ia-pill { position: absolute; top: 3px; right: 3px; font-size: 7px; color: white; padding: 1px 3px; border-radius: 999px; }
+.lv-big { font-size: 14px; font-weight: 600; margin: 1px 0; }
 .c-low { color: #3B6D11; } .c-med { color: #854F0B; } .c-hi { color: #A32D2D; }
-.vbar-wrap { height: 4px; background: var(--color-border-tertiary); border-radius: 2px; margin-top: 4px; }
+.vbar-wrap { height: 3px; background: var(--color-border-tertiary); border-radius: 2px; margin-top: 2px; }
 .vbar-fill { height: 4px; border-radius: 2px; transition: width .5s; }
-.vbar-lbl { font-size: 9px; margin-top: 3px; }
+.vbar-lbl { font-size: 7px; margin-top: 2px; }
 .conf-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; margin-bottom: 10px; }
-.conf-row { display: flex; align-items: center; font-size: 11px; margin-bottom: 4px; }
+.conf-row { display: flex; align-items: center; font-size: 10px; margin-bottom: 3px; }
 .conf-lbl { color: var(--color-text-secondary); flex: 1; }
 .conf-val { font-weight: 500; color: var(--color-text-primary); margin: 0 7px; }
 .conf-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
@@ -171,7 +171,7 @@
 .liq-hm-pricetag { position: absolute; right: 0; background: #00c853; color: #000; font-size: 10px; font-weight: 600; padding: 1px 6px; transform: translateY(-50%); pointer-events: none; z-index: 5; white-space: nowrap; }
 .liq-hm-xaxis { background: #0b0b16; border-top: 1px solid #181828; padding: 3px 0 3px 64px; display: flex; }
 .liq-hm-xlabel { font-size: 9px; color: #444; text-align: center; flex: none; }
-.liq-hm-vol { height: 34px; background: #050508; border-top: 1px solid #151520; display: flex; align-items: flex-end; padding: 2px 0 0 64px; }
+.liq-hm-vol { height: 20px; background: #050508; border-top: 1px solid #151520; display: flex; align-items: flex-end; padding: 2px 0 0 64px; }
 .liq-hm-volbar { border-radius: 1px 1px 0 0; flex: none; margin: 0 0.4px; }
 .liq-hm-stats { display: flex; gap: 8px; padding: 5px 12px; background: #0a0a14; border-top: 1px solid #151520; flex-wrap: wrap; }
 .liq-hm-stat { font-size: 10px; color: #555; }
@@ -181,6 +181,36 @@
 .liq-hm-legend { display: flex; align-items: center; gap: 7px; padding: 5px 12px; background: #0b0b16; border-top: 1px solid #181828; }
 .liq-hm-leggrad { flex: 1; height: 6px; border-radius: 2px; background: linear-gradient(90deg,#001428,#004488,#008866,#60bb10,#d4c000,#e86000,#ff1010,#fff); }
 .liq-hm-leglbl { font-size: 9px; color: #444; }
+
+/* PANEL TENDENCIA */
+.trend-panel { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 12px; margin-bottom: 10px; }
+.trend-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.trend-title { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.trend-updated { font-size: 10px; color: var(--color-text-tertiary); }
+.trend-tf-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; }
+.trend-tf-box { border-radius: var(--border-radius-md); padding: 8px 6px; text-align: center; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); }
+.trend-tf-overall { border: 1.5px solid var(--color-border-primary); }
+.trend-tf-label { font-size: 10px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 4px; text-transform: uppercase; }
+.trend-tf-dir { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.trend-tf-dir.long  { color: #3B6D11; }
+.trend-tf-dir.short { color: #A32D2D; }
+.trend-tf-dir.neutral { color: #BA7517; }
+.trend-tf-score { font-size: 10px; color: var(--color-text-secondary); }
+.trend-indicators { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; padding: 10px; background: var(--color-background-secondary); border-radius: var(--border-radius-md); }
+.trend-ind-row { display: flex; align-items: center; font-size: 11px; }
+.trend-ind-name { color: var(--color-text-secondary); width: 72px; flex-shrink: 0; }
+.trend-ind-val { font-weight: 500; color: var(--color-text-primary); flex: 1; }
+.trend-ind-badge { font-size: 9px; padding: 1px 6px; border-radius: 999px; font-weight: 500; }
+.trend-ind-badge.bull { background: #EAF3DE; color: #3B6D11; }
+.trend-ind-badge.bear { background: #FCEBEB; color: #A32D2D; }
+.trend-ind-badge.neut { background: var(--color-background-primary); color: #BA7517; border: 0.5px solid var(--color-border-secondary); }
+.trend-why { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; margin-bottom: 10px; border-left: 3px solid var(--color-border-primary); }
+.trend-why-title { font-size: 10px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+.trend-why-body { font-size: 12px; color: var(--color-text-primary); line-height: 1.6; }
+.trend-levels-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+.trend-key-level { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 8px 10px; text-align: center; }
+.trend-key-lbl { font-size: 9px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 3px; }
+.trend-key-val { font-size: 12px; font-weight: 600; color: var(--color-text-primary); }
 </style>
 
 <div class="app">
@@ -209,7 +239,7 @@
         </div>
         <div style="text-align:right;">
           <div style="font-size:10px;color:var(--color-text-secondary);margin-bottom:2px;">R:R</div>
-          <div style="font-size:17px;font-weight:500;color:var(--color-text-primary);" id="rrVal">1 : 2.8</div>
+          <div style="font-size:12px;font-weight:500;color:var(--color-text-primary);" id="rrVal">1 : 2.8</div>
         </div>
       </div>
       <div class="levels">
@@ -246,46 +276,89 @@
       </div>
 
       <!-- HEATMAP LIQUIDEZ CON VELAS LIMPIAS -->
-      <div class="liq-heatmap-main">
-        <div class="liq-hm-topbar">
-          <div style="display:flex;align-items:center;">
-            <span class="liq-hm-title">Heatmap de liquidez</span>
-            <span class="liq-hm-price" id="liqHmPrice">-</span>
-            <span class="liq-hm-badge liq-hm-loading" id="liqHmBadge" style="margin-left:8px;">...</span>
+      <!-- PANEL TENDENCIA + JUSTIFICACIÓN -->
+      <div class="trend-panel">
+
+        <!-- Tendencia por temporalidad -->
+        <div class="trend-header">
+          <span class="trend-title">Tendencia del mercado</span>
+          <span class="trend-updated" id="trendUpdated">—</span>
+        </div>
+
+        <div class="trend-tf-row">
+          <div class="trend-tf-box" id="trendBox4h">
+            <div class="trend-tf-label">4H</div>
+            <div class="trend-tf-dir" id="trendDir4h">—</div>
+            <div class="trend-tf-score" id="trendScore4h">—</div>
           </div>
-          <div class="liq-hm-controls">
-            <span style="font-size:10px;color:#555;">Pools:</span>
-            <button class="liq-hm-btn" onclick="liqHmTogglePool(10,this)">10x</button>
-            <button class="liq-hm-btn active" onclick="liqHmTogglePool(25,this)">25x</button>
-            <button class="liq-hm-btn active" onclick="liqHmTogglePool(50,this)">50x</button>
-            <button class="liq-hm-btn" onclick="liqHmTogglePool(100,this)">100x</button>
-            <span style="width:1px;height:12px;background:#252535;"></span>
-            <button class="liq-hm-btn active" onclick="liqHmSetTF('1m',this)">1m</button>
-            <button class="liq-hm-btn" onclick="liqHmSetTF('5m',this)">5m</button>
-            <button class="liq-hm-btn" onclick="liqHmSetTF('15m',this)">15m</button>
-            <button class="liq-hm-btn" onclick="liqHmRefresh()" style="color:#60a0ff;border-color:#204060;">&#8635;</button>
+          <div class="trend-tf-box" id="trendBox1h">
+            <div class="trend-tf-label">1H</div>
+            <div class="trend-tf-dir" id="trendDir1h">—</div>
+            <div class="trend-tf-score" id="trendScore1h">—</div>
+          </div>
+          <div class="trend-tf-box" id="trendBox15m">
+            <div class="trend-tf-label">15M</div>
+            <div class="trend-tf-dir" id="trendDir15m">—</div>
+            <div class="trend-tf-score" id="trendScore15m">—</div>
+          </div>
+          <div class="trend-tf-box trend-tf-overall" id="trendBoxOverall">
+            <div class="trend-tf-label">General</div>
+            <div class="trend-tf-dir" id="trendDirOverall">—</div>
+            <div class="trend-tf-score" id="trendAligned">—</div>
           </div>
         </div>
-        <div class="liq-hm-chart">
-          <div class="liq-hm-yaxis" id="liqHmYAxis"></div>
-          <div class="liq-hm-canvaswrap" id="liqHmCanvasWrap">
-            <canvas id="liqHmCanvas"></canvas>
-            <div class="liq-hm-pricetag" id="liqHmPriceTag">-</div>
+
+        <!-- Indicadores clave -->
+        <div class="trend-indicators">
+          <div class="trend-ind-row">
+            <span class="trend-ind-name">EMA 50</span>
+            <span class="trend-ind-val" id="trendEma50">—</span>
+            <span class="trend-ind-badge" id="trendEma50Badge">—</span>
+          </div>
+          <div class="trend-ind-row">
+            <span class="trend-ind-name">EMA 200</span>
+            <span class="trend-ind-val" id="trendEma200">—</span>
+            <span class="trend-ind-badge" id="trendEma200Badge">—</span>
+          </div>
+          <div class="trend-ind-row">
+            <span class="trend-ind-name">RSI 4H</span>
+            <span class="trend-ind-val" id="trendRsi">—</span>
+            <span class="trend-ind-badge" id="trendRsiBadge">—</span>
+          </div>
+          <div class="trend-ind-row">
+            <span class="trend-ind-name">MACD 4H</span>
+            <span class="trend-ind-val" id="trendMacd">—</span>
+            <span class="trend-ind-badge" id="trendMacdBadge">—</span>
+          </div>
+          <div class="trend-ind-row">
+            <span class="trend-ind-name">OB Presión</span>
+            <span class="trend-ind-val" id="trendOb">—</span>
+            <span class="trend-ind-badge" id="trendObBadge">—</span>
           </div>
         </div>
-        <div class="liq-hm-xaxis" id="liqHmXAxis"></div>
-        <div class="liq-hm-vol" id="liqHmVol"></div>
-        <div class="liq-hm-stats">
-          <span class="liq-hm-stat">Bids: <span id="liqHmBids" class="liq-hm-statg">-</span></span>
-          <span class="liq-hm-stat">Asks: <span id="liqHmAsks" class="liq-hm-statr">-</span></span>
-          <span class="liq-hm-stat">Presion compradora: <span id="liqHmPres">-</span></span>
-          <span class="liq-hm-stat">Spread: <span id="liqHmSpread">-</span></span>
+
+        <!-- Justificación de la operación -->
+        <div class="trend-why">
+          <div class="trend-why-title">¿Por qué esta operación?</div>
+          <div class="trend-why-body" id="trendWhyBody">Analiza un par para ver la justificación detallada de la señal.</div>
         </div>
-        <div class="liq-hm-legend">
-          <span class="liq-hm-leglbl">Sin liquidez</span>
-          <div class="liq-hm-leggrad"></div>
-          <span class="liq-hm-leglbl">Maxima liquidez</span>
+
+        <!-- Niveles clave -->
+        <div class="trend-levels-row">
+          <div class="trend-key-level">
+            <div class="trend-key-lbl">Soporte clave</div>
+            <div class="trend-key-val" id="trendSupport">—</div>
+          </div>
+          <div class="trend-key-level">
+            <div class="trend-key-lbl">Resistencia clave</div>
+            <div class="trend-key-val" id="trendResist">—</div>
+          </div>
+          <div class="trend-key-level">
+            <div class="trend-key-lbl">Precio actual</div>
+            <div class="trend-key-val" id="trendCurPrice">—</div>
+          </div>
         </div>
+
       </div>
     </div>
     <div class="side">
@@ -876,7 +949,7 @@ function hmTogglePool(v,btn){ if(typeof liqHmTogglePool==='function') liqHmToggl
 /* ═══════════════════════════════════════════
    HEATMAP LIQUIDEZ PRINCIPAL (panel izquierdo)
 ═══════════════════════════════════════════ */
-const LIQ_COLS = 56, LIQ_ROWS = 32, LIQ_CELL_H = 16;
+const LIQ_COLS = 36, LIQ_ROWS = 18, LIQ_CELL_H = 11;
 let liqHmSymbol = 'BTCUSDT', liqHmTF = '1m', liqHmPoolMult = 1.5;
 let liqHmLastOB = null, liqHmLastCandles = null;
 
@@ -965,7 +1038,7 @@ function liqHmRender(ob, candles, curPrice) {
   document.getElementById('liqHmPrice').textContent=fmtP(curPrice);
 
   const yAxis=document.getElementById('liqHmYAxis'); yAxis.style.height=H+'px'; yAxis.innerHTML='';
-  for (let r=0; r<LIQ_ROWS; r+=2) {
+  for (let r=0; r<LIQ_ROWS; r+=3) {
     const p = cMaxP-(r/LIQ_ROWS)*(cMaxP-cMinP);
     const el=document.createElement('div');
     el.className='liq-hm-ylabel'+(Math.abs(p-curPrice)<(cMaxP-cMinP)*0.02?' cur':'');
@@ -1023,6 +1096,163 @@ liqHmRefresh();
 setInterval(liqHmRefresh, 20000);
 
 
+
+
+/* ═══════════════════════════════════════════
+   DOMINANCIA TOP 5
+═══════════════════════════════════════════ */
+const domCoins=[
+  {sym:'BTC',name:'Bitcoin', cap:1320,chg:{'1h':-0.3,'24h':2.1,'7d':8.4,'30d':24.2}},
+  {sym:'ETH',name:'Ethereum',cap:420, chg:{'1h':0.8,'24h':-0.8,'7d':3.1,'30d':11.5}},
+  {sym:'BNB',name:'BNB',     cap:88,  chg:{'1h':0.2,'24h':0.3,'7d':2.8,'30d':7.1}},
+  {sym:'SOL',name:'Solana',  cap:76,  chg:{'1h':1.4,'24h':4.3,'7d':14.2,'30d':38.5}},
+  {sym:'XRP',name:'Ripple',  cap:64,  chg:{'1h':-0.5,'24h':-1.2,'7d':-2.1,'30d':5.8}},
+];
+let domTF='24h';
+
+function getDomColor(chg){
+  if(Math.abs(chg)<0.05) return{bg:'#1e1e1e',text:'#666'};
+  const intensity=Math.min(Math.abs(chg)/10,1);
+  if(chg>0){const r=Math.round(20+10*(1-intensity)),g=Math.round(50+90*intensity);return{bg:'rgb('+r+','+g+',10)',text:intensity>.5?'#C0DD97':'#97C459'};}
+  else{const r=Math.round(80+80*intensity);return{bg:'rgb('+r+',15,15)',text:intensity>.5?'#F7C1C1':'#F09595'};}
+}
+function fmtCap(c){return c>=1000?'$'+(c/1000).toFixed(1)+'T':'$'+c+'B';}
+
+function renderDom(tf){
+  const totalCap=domCoins.reduce((a,c)=>a+c.cap,0);
+  const sorted=[...domCoins].sort((a,b)=>b.cap-a.cap);
+  let html='';
+  sorted.forEach(coin=>{
+    const chg=coin.chg[tf]; const col=getDomColor(chg);
+    const share=coin.cap/totalCap;
+    const w=Math.max(44,Math.min(136,Math.round(44+Math.pow(share,0.38)*580)));
+    const h=Math.max(34,Math.round(w*0.6));
+    const fsS=w<58?9:w<82?11:w<110?13:15; const fsC=w<58?8:w<82?9:w<110?11:12;
+    const sign=chg>=0?'+':'';
+    html+='<div class="hm-block" style="width:'+w+'px;height:'+h+'px;background:'+col.bg+';">'
+      +'<span class="hm-sym" style="color:'+col.text+';font-size:'+fsS+'px;">'+coin.sym+'</span>'
+      +'<span class="hm-chg" style="color:'+col.text+';font-size:'+fsC+'px;">'+sign+chg.toFixed(1)+'%</span>'
+      +'<div class="hm-tt"><div class="hm-tt-name">'+coin.name+'</div>'
+      +'<div class="hm-tt-row">Cambio: <span style="color:'+(chg>=0?'#3B6D11':'#A32D2D')+'">'+sign+chg.toFixed(2)+'%</span></div>'
+      +'<div class="hm-tt-row">Cap: <span>'+fmtCap(coin.cap)+'</span></div>'
+      +'<div class="hm-tt-row">Dom.: <span>'+(coin.cap/totalCap*100).toFixed(1)+'%</span></div></div></div>';
+  });
+  const grid=document.getElementById('hmGrid');
+  if(grid) grid.innerHTML=html;
+  const greens=sorted.filter(c=>c.chg[tf]>0).length;
+  const reds=sorted.filter(c=>c.chg[tf]<0).length;
+  const avg=sorted.reduce((a,c)=>a+c.chg[tf],0)/sorted.length;
+  const gEl=document.getElementById('domGreen'); if(gEl){gEl.textContent=greens;gEl.style.color='#3B6D11';}
+  const rEl=document.getElementById('domRed');   if(rEl){rEl.textContent=reds;rEl.style.color='#A32D2D';}
+  const sEl=document.getElementById('domSent');  if(sEl){sEl.textContent=avg>1?'Alcista':avg<-1?'Bajista':'Neutral';sEl.style.color=avg>1?'#3B6D11':avg<-1?'#A32D2D':'#BA7517';}
+}
+
+function setDomTF(tf,btn){
+  domTF=tf;
+  document.querySelectorAll('.tf-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDom(tf);
+}
+
+// Init dominancia
+renderDom('24h');
+
+
+/* ═══════════════════════════════════════════
+   PANEL DE TENDENCIA
+═══════════════════════════════════════════ */
+function updateTrendPanel(sym, sig, curPrice){
+  const now = new Date();
+  const timeStr = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const el = id => document.getElementById(id);
+  if(!el('trendDir4h')) return;
+
+  el('trendUpdated').textContent = 'Actualizado '+timeStr;
+
+  // Leer las señales por TF desde sig.signals
+  const tf4hSig  = sig.signals[0]; // "4H LONG (score X)"
+  const tf1hSig  = sig.signals[1]; // "1H LONG (score X)"
+  const tf15mSig = sig.signals[2]; // "15M LONG (score X)"
+
+  function parseTFSignal(s){
+    if(!s) return {dir:'—',score:'—'};
+    const m = s.lbl.match(/(LONG|SHORT|NEUTRAL)/);
+    const sc = s.lbl.match(/score\s*([-\d.]+)/);
+    return { dir: m?m[1]:'—', score: sc?sc[1]:'—', dot: s.dot };
+  }
+
+  const p4h  = parseTFSignal(tf4hSig);
+  const p1h  = parseTFSignal(tf1hSig);
+  const p15m = parseTFSignal(tf15mSig);
+  const overall = sig.isLong ? 'LONG' : 'SHORT';
+
+  function setTF(prefix, data){
+    const dirEl = el('trendDir'+prefix);
+    if(!dirEl) return;
+    dirEl.textContent = data.dir;
+    dirEl.className = 'trend-tf-dir '+(data.dir==='LONG'?'long':data.dir==='SHORT'?'short':'neutral');
+    el('trendScore'+prefix).textContent = data.score!=='—'?'Score: '+data.score:'—';
+    const box = el('trendBox'+prefix);
+    if(box){
+      box.style.borderColor = data.dir==='LONG'?'#97C459':data.dir==='SHORT'?'#F09595':'var(--color-border-tertiary)';
+      box.style.background  = data.dir==='LONG'?'#EAF3DE':data.dir==='SHORT'?'#FCEBEB':'var(--color-background-secondary)';
+    }
+  }
+
+  setTF('4h',  p4h);
+  setTF('1h',  p1h);
+  setTF('15m', p15m);
+
+  // Overall
+  const overallEl = el('trendDirOverall');
+  if(overallEl){
+    overallEl.textContent = overall;
+    overallEl.className = 'trend-tf-dir '+(sig.isLong?'long':'short');
+  }
+  if(el('trendAligned')) el('trendAligned').textContent = sig.aligned+'/3 TF alineadas';
+  const overallBox = el('trendBoxOverall');
+  if(overallBox){
+    overallBox.style.borderColor = sig.isLong?'#639922':'#A32D2D';
+    overallBox.style.background  = sig.isLong?'#EAF3DE':'#FCEBEB';
+  }
+
+  // Indicadores
+  const setInd = (val, badge, badgeId, valId, cls) => {
+    if(el(valId))   el(valId).textContent   = val;
+    if(el(badgeId)){el(badgeId).textContent = badge; el(badgeId).className='trend-ind-badge '+cls;}
+  };
+  setInd(fmt(sig.e50),   curPrice>sig.e50?'Precio sobre':'Precio bajo', 'trendEma50Badge', 'trendEma50',  curPrice>sig.e50?'bull':'bear');
+  setInd(fmt(sig.e200),  curPrice>sig.e200?'Precio sobre':'Precio bajo','trendEma200Badge','trendEma200', curPrice>sig.e200?'bull':'bear');
+  setInd(sig.rsi.toFixed(1), sig.rsi<35?'Sobreventa':sig.rsi>68?'Sobrecompra':'Neutro', 'trendRsiBadge','trendRsi', sig.rsi<40?'bull':sig.rsi>65?'bear':'neut');
+  setInd(sig.macdBull?'Alcista':'Bajista', sig.macdBull?'Cruce ↑':'Cruce ↓', 'trendMacdBadge','trendMacd', sig.macdBull?'bull':'bear');
+  const obPct = Math.round(sig.obPressure*100);
+  setInd(obPct+'% bids', obPct>55?'Compradores':'Vendedores', 'trendObBadge','trendOb', obPct>55?'bull':obPct<45?'bear':'neut');
+
+  // Justificación
+  const dir = sig.isLong?'LONG':'SHORT';
+  const strength = sig.aligned===3?'Las 3 temporalidades (4H, 1H y 15M) están alineadas —':
+                   sig.aligned===2?'2 de 3 temporalidades alineadas —':'Solo 4H confirma —';
+  const rsiTxt = sig.rsi<35?'El RSI en sobreventa ('+sig.rsi.toFixed(1)+') sugiere agotamiento vendedor y posible rebote.':
+                 sig.rsi>68?'El RSI en sobrecompra ('+sig.rsi.toFixed(1)+') indica presión vendedora.':
+                 'RSI en zona neutral ('+sig.rsi.toFixed(1)+').';
+  const emaTxt = curPrice>sig.e200?'Precio sobre EMA200, estructura alcista confirmada.':'Precio bajo EMA200, estructura bajista.';
+  const macdTxt = sig.macdBull?'MACD con cruce alcista, momentum positivo.':'MACD con cruce bajista, momentum negativo.';
+  const obTxt = obPct>55?'Presión compradora en order book ('+obPct+'% bids).':obPct<45?'Presión vendedora en order book ('+(100-obPct)+'% asks).':'Order book equilibrado.';
+  const why = strength+' señal '+dir+'. '+emaTxt+' '+rsiTxt+' '+macdTxt+' '+obTxt
+    +' Entrada sugerida en '+fmt(sig.entry)+' con confluencia '+sig.confPct+'%.';
+  if(el('trendWhyBody')){
+    el('trendWhyBody').textContent = why;
+    el('trendWhyBody').style.borderLeftColor = sig.isLong?'#639922':'#A32D2D';
+  }
+  // Actualizar borde del panel why
+  const whyPanel = document.querySelector('.trend-why');
+  if(whyPanel) whyPanel.style.borderLeftColor = sig.isLong?'#639922':'#A32D2D';
+
+  // Niveles clave
+  if(el('trendSupport'))  el('trendSupport').textContent  = fmt(sig.sl*(1/0.997));
+  if(el('trendResist'))   el('trendResist').textContent   = fmt(sig.tp1*(0.997));
+  if(el('trendCurPrice')) el('trendCurPrice').textContent = fmt(curPrice);
+}
 
 </script>
 
