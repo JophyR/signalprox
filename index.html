@@ -152,7 +152,7 @@
 .topbar-right { display: flex; align-items: center; gap: 8px; }
 
 /* HEATMAP LIQUIDEZ PRINCIPAL */
-.liq-heatmap-main { background: #080810; border-radius: var(--border-radius-lg); overflow: hidden; margin-bottom: 10px; }
+.liq-heatmap-main { background: #080810; border-radius: var(--border-radius-lg); overflow: hidden; margin-bottom: 10px; max-height: 180px; }
 .liq-hm-topbar { background: #0e0e1a; padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1a1a28; flex-wrap: wrap; gap: 5px; }
 .liq-hm-title { font-size: 11px; font-weight: 500; color: #d0d0e0; }
 .liq-hm-price { font-size: 12px; font-weight: 500; color: #00e676; margin-left: 8px; }
@@ -167,11 +167,11 @@
 .liq-hm-yaxis { width: 64px; flex-shrink: 0; background: #0b0b16; border-right: 1px solid #181828; position: relative; }
 .liq-hm-ylabel { position: absolute; right: 5px; font-size: 9px; color: #444; transform: translateY(-50%); white-space: nowrap; }
 .liq-hm-ylabel.cur { color: #00e676; font-weight: 500; }
-.liq-hm-canvaswrap { flex: 1; position: relative; overflow: hidden; }
+.liq-hm-canvaswrap { flex: 1; position: relative; overflow: hidden; max-height: 120px; }
 .liq-hm-pricetag { position: absolute; right: 0; background: #00c853; color: #000; font-size: 10px; font-weight: 600; padding: 1px 6px; transform: translateY(-50%); pointer-events: none; z-index: 5; white-space: nowrap; }
 .liq-hm-xaxis { background: #0b0b16; border-top: 1px solid #181828; padding: 3px 0 3px 64px; display: flex; }
 .liq-hm-xlabel { font-size: 9px; color: #444; text-align: center; flex: none; }
-.liq-hm-vol { height: 20px; background: #050508; border-top: 1px solid #151520; display: flex; align-items: flex-end; padding: 2px 0 0 64px; }
+.liq-hm-vol { height: 14px; background: #050508; border-top: 1px solid #151520; display: flex; align-items: flex-end; padding: 2px 0 0 64px; }
 .liq-hm-volbar { border-radius: 1px 1px 0 0; flex: none; margin: 0 0.4px; }
 .liq-hm-stats { display: flex; gap: 8px; padding: 5px 12px; background: #0a0a14; border-top: 1px solid #151520; flex-wrap: wrap; }
 .liq-hm-stat { font-size: 10px; color: #555; }
@@ -949,7 +949,7 @@ function hmTogglePool(v,btn){ if(typeof liqHmTogglePool==='function') liqHmToggl
 /* ═══════════════════════════════════════════
    HEATMAP LIQUIDEZ PRINCIPAL (panel izquierdo)
 ═══════════════════════════════════════════ */
-const LIQ_COLS = 36, LIQ_ROWS = 18, LIQ_CELL_H = 11;
+const LIQ_COLS = 36, LIQ_ROWS = 10, LIQ_CELL_H = 7;
 let liqHmSymbol = 'BTCUSDT', liqHmTF = '1m', liqHmPoolMult = 1.5;
 let liqHmLastOB = null, liqHmLastCandles = null;
 
@@ -989,9 +989,9 @@ function liqHmBuildLevels(ob, candles) {
 function liqHmRender(ob, candles, curPrice) {
   liqHmLastOB=ob; liqHmLastCandles=candles;
   const wrap = document.getElementById('liqHmCanvasWrap');
-  const W = wrap.clientWidth || 580;
+  const W = Math.min(wrap.clientWidth || 580, wrap.clientWidth);
   const cellW = W / LIQ_COLS;
-  const H = LIQ_ROWS * LIQ_CELL_H;
+  const H = LIQ_ROWS * LIQ_CELL_H; // ~70px total
   const canvas = document.getElementById('liqHmCanvas');
   canvas.width=W; canvas.height=H; canvas.style.width=W+'px'; canvas.style.height=H+'px';
   const ctx = canvas.getContext('2d');
