@@ -4,7 +4,7 @@
 .topbar { background: var(--color-background-primary); border-bottom: 0.5px solid var(--color-border-tertiary); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
 .logo { font-size: 15px; font-weight: 500; color: var(--color-text-primary); display: flex; align-items: center; gap: 8px; }
 .live-badge { font-size: 11px; padding: 2px 8px; border-radius: var(--border-radius-md); background: var(--color-background-success); color: var(--color-text-success); }
-.main { display: grid; grid-template-columns: minmax(0,1fr) 290px; gap: 10px; padding: 10px; }
+.main { display: grid; grid-template-columns: minmax(0,1fr) 260px; gap: 8px; padding: 8px; max-width: 100%; overflow: hidden; }
 .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 12px; }
 .card-title { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
 .search-row { display: flex; gap: 8px; margin-bottom: 8px; position: relative; }
@@ -16,16 +16,16 @@
 .coin-suggestions.open { display: block; }
 .sugg-item { padding: 7px 12px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; color: var(--color-text-primary); }
 .sugg-item:hover { background: var(--color-background-secondary); }
-.signal-banner { border-radius: var(--border-radius-lg); padding: 8px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+.signal-banner { border-radius: var(--border-radius-lg); padding: 6px 10px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; width: 100%; }
 .sig-long { background: #EAF3DE; border: 0.5px solid #97C459; }
 .sig-short { background: #FCEBEB; border: 0.5px solid #F09595; }
-.sig-dir { font-size: 16px; font-weight: 500; }
+.sig-dir { font-size: 13px; font-weight: 600; }
 .sig-long .sig-dir { color: #3B6D11; }
 .sig-short .sig-dir { color: #A32D2D; }
 .sig-meta { font-size: 10px; margin-top: 2px; }
 .sig-long .sig-meta { color: #3B6D11; opacity:.85; }
 .sig-short .sig-meta { color: #A32D2D; opacity:.85; }
-.levels { display: grid; grid-template-columns: repeat(5,1fr); gap: 4px; margin-bottom: 6px; overflow: hidden; }
+.levels { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 4px; margin-bottom: 6px; width: 100%; }
 .lv { border-radius: var(--border-radius-md); padding: 7px 6px; position: relative; min-width: 0; }
 .lv-entry { background: var(--color-background-secondary); border: 1.5px solid #639922; }
 .lv-tp1 { background: #EAF3DE; }
@@ -152,7 +152,7 @@
 .topbar-right { display: flex; align-items: center; gap: 8px; }
 
 /* HEATMAP LIQUIDEZ PRINCIPAL */
-.liq-heatmap-main { background: #080810; border-radius: var(--border-radius-lg); overflow: hidden; margin-bottom: 10px; max-height: 180px; }
+.liq-heatmap-main { background: #080810; border-radius: var(--border-radius-lg); overflow: hidden; margin-bottom: 10px; height: 180px; max-height: 180px; }
 .liq-hm-topbar { background: #0e0e1a; padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1a1a28; flex-wrap: wrap; gap: 5px; }
 .liq-hm-title { font-size: 11px; font-weight: 500; color: #d0d0e0; }
 .liq-hm-price { font-size: 12px; font-weight: 500; color: #00e676; margin-left: 8px; }
@@ -167,7 +167,7 @@
 .liq-hm-yaxis { width: 64px; flex-shrink: 0; background: #0b0b16; border-right: 1px solid #181828; position: relative; }
 .liq-hm-ylabel { position: absolute; right: 5px; font-size: 9px; color: #444; transform: translateY(-50%); white-space: nowrap; }
 .liq-hm-ylabel.cur { color: #00e676; font-weight: 500; }
-.liq-hm-canvaswrap { flex: 1; position: relative; overflow: hidden; max-height: 120px; }
+.liq-hm-canvaswrap { flex: 1; position: relative; overflow: hidden; }
 .liq-hm-pricetag { position: absolute; right: 0; background: #00c853; color: #000; font-size: 10px; font-weight: 600; padding: 1px 6px; transform: translateY(-50%); pointer-events: none; z-index: 5; white-space: nowrap; }
 .liq-hm-xaxis { background: #0b0b16; border-top: 1px solid #181828; padding: 3px 0 3px 64px; display: flex; }
 .liq-hm-xlabel { font-size: 9px; color: #444; text-align: center; flex: none; }
@@ -183,15 +183,15 @@
 .liq-hm-leglbl { font-size: 9px; color: #444; }
 
 /* PANEL TENDENCIA */
-.trend-panel { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 12px; margin-bottom: 10px; }
+.trend-panel { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 10px; margin-bottom: 8px; }
 .trend-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .trend-title { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
 .trend-updated { font-size: 10px; color: var(--color-text-tertiary); }
 .trend-tf-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; }
-.trend-tf-box { border-radius: var(--border-radius-md); padding: 8px 6px; text-align: center; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); }
+.trend-tf-box { border-radius: var(--border-radius-md); padding: 5px 4px; text-align: center; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); }
 .trend-tf-overall { border: 1.5px solid var(--color-border-primary); }
 .trend-tf-label { font-size: 10px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 4px; text-transform: uppercase; }
-.trend-tf-dir { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.trend-tf-dir { font-size: 11px; font-weight: 600; margin-bottom: 1px; }
 .trend-tf-dir.long  { color: #3B6D11; }
 .trend-tf-dir.short { color: #A32D2D; }
 .trend-tf-dir.neutral { color: #BA7517; }
@@ -206,7 +206,7 @@
 .trend-ind-badge.neut { background: var(--color-background-primary); color: #BA7517; border: 0.5px solid var(--color-border-secondary); }
 .trend-why { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; margin-bottom: 10px; border-left: 3px solid var(--color-border-primary); }
 .trend-why-title { font-size: 10px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
-.trend-why-body { font-size: 12px; color: var(--color-text-primary); line-height: 1.6; }
+.trend-why-body { font-size: 11px; color: var(--color-text-primary); line-height: 1.5; }
 .trend-levels-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
 .trend-key-level { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 8px 10px; text-align: center; }
 .trend-key-lbl { font-size: 9px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 3px; }
@@ -359,31 +359,50 @@
           </div>
         </div>
 
+      <!-- HEATMAP LIQUIDEZ PRINCIPAL -->
+      <div style="background:#080810;border-radius:var(--border-radius-lg);overflow:hidden;margin-bottom:10px;height:185px;width:100%;">
+        <div style="background:#0e0e1a;padding:5px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1a1a28;flex-wrap:wrap;gap:4px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:10px;font-weight:500;color:#d0d0e0;">Heatmap de liquidez · Binance live</span>
+            <span style="font-size:10px;color:#00e676;" id="liqHmPrice">-</span>
+            <span style="font-size:9px;padding:1px 6px;border-radius:999px;background:#0a2a0a;color:#00c853;border:1px solid #1a5a1a;" id="liqHmBadge">●</span>
+          </div>
+          <div style="display:flex;gap:3px;align-items:center;">
+            <button class="hm-ctrl" onclick="liqHmTogglePool(25,this)">25x</button>
+            <button class="hm-ctrl active" onclick="liqHmTogglePool(50,this)">50x</button>
+            <button class="hm-ctrl" onclick="liqHmTogglePool(100,this)">100x</button>
+            <span style="width:1px;height:10px;background:#333;"></span>
+            <button class="hm-ctrl active" onclick="liqHmSetTF('1m',this)">1m</button>
+            <button class="hm-ctrl" onclick="liqHmSetTF('5m',this)">5m</button>
+            <button class="hm-ctrl" onclick="liqHmRefresh()" style="color:#60a0ff;">&#8635;</button>
+          </div>
+        </div>
+        <div style="display:flex;height:128px;overflow:hidden;">
+          <div style="width:58px;flex-shrink:0;background:#0b0b16;border-right:1px solid #181828;position:relative;" id="liqHmYAxis"></div>
+          <div style="flex:1;position:relative;overflow:hidden;" id="liqHmCanvasWrap">
+            <canvas id="liqHmCanvas"></canvas>
+            <div style="position:absolute;right:0;background:#00c853;color:#000;font-size:9px;font-weight:600;padding:1px 5px;transform:translateY(-50%);pointer-events:none;z-index:5;" id="liqHmPriceTag">-</div>
+          </div>
+        </div>
+        <div style="background:#0b0b16;border-top:1px solid #181828;padding:2px 0 2px 58px;display:flex;overflow:hidden;" id="liqHmXAxis"></div>
+        <div style="height:18px;background:#050508;border-top:1px solid #151520;display:flex;align-items:flex-end;padding:1px 0 0 58px;" id="liqHmVol"></div>
       </div>
     </div>
     <div class="side">
       <div class="card">
-        <div class="card-title">Pares con senal</div>
-        <div class="pair-row"><span class="pair-name">BTC/USDT</span><span style="font-size:11px;color:#3B6D11">+2.1%</span><span class="pair-sig ps-long">LONG</span></div>
-        <div class="pair-row"><span class="pair-name">ETH/USDT</span><span style="font-size:11px;color:#A32D2D">-0.8%</span><span class="pair-sig ps-short">SHORT</span></div>
-        <div class="pair-row"><span class="pair-name">SOL/USDT</span><span style="font-size:11px;color:#3B6D11">+4.3%</span><span class="pair-sig ps-long">LONG</span></div>
-        <div class="pair-row"><span class="pair-name">BNB/USDT</span><span style="font-size:11px;color:var(--color-text-secondary)">+0.3%</span><span class="pair-sig ps-neut">-</span></div>
-        <div class="pair-row"><span class="pair-name">XRP/USDT</span><span style="font-size:11px;color:#A32D2D">-1.2%</span><span class="pair-sig ps-short">SHORT</span></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Order Book</div>
-        <div class="ob-header"><span>Precio</span><span>Tamano</span></div>
-        <div id="obRows"></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Mapa de liquidaciones</div>
+        <div class="card-title"><i class="ti ti-flame" aria-hidden="true" style="font-size:12px;vertical-align:-1px;margin-right:3px;"></i>Mapa de liquidaciones</div>
         <div class="liq-legend">
           <div class="liq-leg"><div class="liq-leg-swatch" style="background:linear-gradient(90deg,rgba(99,153,34,.15),rgba(99,153,34,.7));"></div>Longs</div>
           <div class="liq-leg"><div class="liq-leg-swatch" style="background:linear-gradient(90deg,rgba(226,75,74,.15),rgba(226,75,74,.7));"></div>Shorts</div>
         </div>
         <div id="liqBands"></div>
       </div>
-      <div class="card" style="padding:8px 12px 0;">
+      <div class="card">
+        <div class="card-title">Order Book</div>
+        <div class="ob-header"><span>Precio</span><span>Tamano</span></div>
+        <div id="obRows"></div>
+      </div>
+            <div class="card" style="padding:8px 12px 0;">
         <div class="card-title">Heatmap de liquidez (Binance live)</div>
         <div class="hm-liq-wrap">
           <div class="hm-liq-topbar">
@@ -622,45 +641,85 @@ function mergeConfluence(tf4h, tf1h, tf15m, ob, curPrice, candles4h){
   let entry;
   const e50_4h  = tf4h.e50;
   const e200_4h = tf4h.e200;
+  const MAX_DIST = 0.005; // zona óptima: máximo 0.5% del precio actual
+
+  // Nivel de precio redondo más cercano (psicológico)
+  function nearestRound(price, side){
+    const magnitude = Math.pow(10, Math.floor(Math.log10(price))-1);
+    const roundDown = Math.floor(price/magnitude)*magnitude;
+    const roundUp   = Math.ceil(price/magnitude)*magnitude;
+    if(side==='long')  return roundDown < price ? roundDown : null;
+    if(side==='short') return roundUp   > price ? roundUp   : null;
+    return null;
+  }
+  const roundLong  = nearestRound(curPrice,'long');
+  const roundShort = nearestRound(curPrice,'short');
 
   if(isLong){
+    // Candidatos: bid wall, soporte pivot, EMA cercana, nivel redondo
+    // Solo los que estén entre 0.05% y 0.5% por debajo del precio actual
     const cands = [
-      topBid.p<curPrice ? topBid.p : null,
-      nearSup<curPrice  ? nearSup  : null,
-      e50_4h<curPrice   ? e50_4h   : null,
-      e200_4h<curPrice  ? e200_4h  : null,
-    ].filter(Boolean).sort((a,b)=>b-a);
-    if(cands.length>=2)      entry = cands[0]*0.6+cands[1]*0.4;
-    else if(cands.length===1)entry = cands[0]*0.999;
-    else                     entry = curPrice*0.997;
-    if((curPrice-entry)/curPrice>0.025) entry=curPrice*0.975;
-    if(entry>=curPrice) entry=curPrice*0.9985;
+      topBid.p,
+      nearSup,
+      e50_4h < curPrice ? e50_4h : null,
+      roundLong,
+    ].filter(p => {
+      if(!p) return false;
+      const dist = (curPrice - p) / curPrice;
+      return dist >= 0.0005 && dist <= MAX_DIST; // entre 0.05% y 0.5% abajo
+    }).sort((a,b) => b - a); // el más cercano al precio primero
+
+    if(cands.length > 0){
+      // Si hay varios candidatos, elegir el más cercano al precio actual
+      entry = cands[0];
+    } else {
+      // No hay zona óptima cercana — entrar ligeramente bajo el precio actual
+      entry = curPrice * 0.998;
+    }
   } else {
+    // SHORT: candidatos por encima del precio actual
     const cands = [
-      topAsk.p>curPrice ? topAsk.p : null,
-      nearRes>curPrice  ? nearRes  : null,
-      e50_4h>curPrice   ? e50_4h   : null,
-      e200_4h>curPrice  ? e200_4h  : null,
-    ].filter(Boolean).sort((a,b)=>a-b);
-    if(cands.length>=2)      entry = cands[0]*0.6+cands[1]*0.4;
-    else if(cands.length===1)entry = cands[0]*1.001;
-    else                     entry = curPrice*1.003;
-    if((entry-curPrice)/curPrice>0.025) entry=curPrice*1.025;
-    if(entry<=curPrice) entry=curPrice*1.0015;
+      topAsk.p,
+      nearRes,
+      e50_4h > curPrice ? e50_4h : null,
+      roundShort,
+    ].filter(p => {
+      if(!p) return false;
+      const dist = (p - curPrice) / curPrice;
+      return dist >= 0.0005 && dist <= MAX_DIST; // entre 0.05% y 0.5% arriba
+    }).sort((a,b) => a - b); // el más cercano al precio primero
+
+    if(cands.length > 0){
+      entry = cands[0];
+    } else {
+      // No hay zona óptima cercana — entrar ligeramente sobre el precio actual
+      entry = curPrice * 1.002;
+    }
   }
 
-  // SL: ATR*1.2 o soporte/resistencia con buffer
-  let slDist = Math.max(atrPct*1.2, 1.0);
-  if(isLong && nearSup<entry){ const d=(entry-nearSup)/entry*100; if(d>0.3&&d<7) slDist=d+0.3; }
-  if(!isLong && nearRes>entry){ const d=(nearRes-entry)/entry*100; if(d>0.3&&d<7) slDist=d+0.3; }
-  slDist = Math.max(slDist, 0.8);
+  // SL basado en ATR del 15M (~1.3%) — mismo método que señales profesionales
+  // Usar ATR real pero con mínimo 0.8% y máximo 2.5%
+  let slDist = Math.max(Math.min(atrPct * 1.1, 2.5), 0.8);
 
-  const tp1Dist = slDist*1.8;
-  const tp2Dist = slDist*3.2;
+  // Ajustar SL si hay soporte/resistencia real cerca
+  if(isLong && nearSup < entry){
+    const d = (entry - nearSup) / entry * 100;
+    if(d > 0.3 && d < 3.0) slDist = d + 0.15; // buffer pequeño bajo el soporte
+  }
+  if(!isLong && nearRes > entry){
+    const d = (nearRes - entry) / entry * 100;
+    if(d > 0.3 && d < 3.0) slDist = d + 0.15;
+  }
+
+  // TP1=1x SL, TP2=2x SL, TP3=3x SL (igual que bot profesional)
+  const tp1Dist = slDist * 1.0;
+  const tp2Dist = slDist * 2.0;
+  const tp3Dist = slDist * 3.0;
   const sl  = isLong ? entry*(1-slDist/100)  : entry*(1+slDist/100);
   const tp1 = isLong ? entry*(1+tp1Dist/100) : entry*(1-tp1Dist/100);
   const tp2 = isLong ? entry*(1+tp2Dist/100) : entry*(1-tp2Dist/100);
-  const rr  = (tp1Dist/slDist).toFixed(1);
+  const tp3 = isLong ? entry*(1+tp3Dist/100) : entry*(1-tp3Dist/100);
+  const rr  = '1:1 / 1:2 / 1:3';
 
   // Apalancamiento por ATR
   let lev,volLabel,volBg,volPct;
@@ -701,7 +760,7 @@ function mergeConfluence(tf4h, tf1h, tf15m, ob, curPrice, candles4h){
     +' SL: '+fmt(sl)+' | TP1: '+fmt(tp1)+' | TP2: '+fmt(tp2)+'. R:R 1:'+rr+'.';
 
   return {
-    valid:true, isLong, entry, tp1, tp2, sl, slDist, tp1Dist, tp2Dist, rr,
+    valid:true, isLong, entry, tp1, tp2, tp3, sl, slDist, tp1Dist, tp2Dist, tp3Dist, rr,
     lev, volLabel, volBg, volPct, confPct, aligned, signals:combSignals,
     tags, bodyText, rsi:tf4h.rsi, atrPct, e50:e50_4h, e200:e200_4h,
     macdBull:tf4h.macdBull, obPressure, strengthLabel,
@@ -736,6 +795,8 @@ function applySignal(sym, sig, curPrice){
   document.getElementById('tp1pct').textContent=fmtPct(L?sig.tp1Dist:-sig.tp1Dist);
   document.getElementById('tp2val').textContent=fmt(sig.tp2);
   document.getElementById('tp2pct').textContent=fmtPct(L?sig.tp2Dist:-sig.tp2Dist);
+  if(document.getElementById('tp3val')) document.getElementById('tp3val').textContent=fmt(sig.tp3);
+  if(document.getElementById('tp3pct')) document.getElementById('tp3pct').textContent=fmtPct(L?sig.tp3Dist:-sig.tp3Dist);
   document.getElementById('slval').textContent=fmt(sig.sl);
   document.getElementById('slpct').textContent=fmtPct(L?-sig.slDist:sig.slDist);
 
@@ -1177,7 +1238,7 @@ function updateTrendPanel(sym, sig, curPrice){
   function parseTFSignal(s){
     if(!s) return {dir:'—',score:'—'};
     const m = s.lbl.match(/(LONG|SHORT|NEUTRAL)/);
-    const sc = s.lbl.match(/score\s*([-\d.]+)/);
+    const sc = s.lbl.match(/score\s*([\-\d.]+)/);
     return { dir: m?m[1]:'—', score: sc?sc[1]:'—', dot: s.dot };
   }
 
