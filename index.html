@@ -4,7 +4,7 @@
 .topbar { background: var(--color-background-primary); border-bottom: 0.5px solid var(--color-border-tertiary); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
 .logo { font-size: 15px; font-weight: 500; color: var(--color-text-primary); display: flex; align-items: center; gap: 8px; }
 .live-badge { font-size: 11px; padding: 2px 8px; border-radius: var(--border-radius-md); background: var(--color-background-success); color: var(--color-text-success); }
-.main { display: grid; grid-template-columns: minmax(0,1fr) 260px; gap: 8px; padding: 8px; max-width: 100%; overflow: hidden; }
+.main { display: grid; grid-template-columns: minmax(0,1fr) 280px; gap: 10px; padding: 10px; max-width: 100%; overflow-x: hidden; }
 .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 12px; }
 .card-title { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
 .search-row { display: flex; gap: 8px; margin-bottom: 8px; position: relative; }
@@ -16,7 +16,7 @@
 .coin-suggestions.open { display: block; }
 .sugg-item { padding: 7px 12px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; color: var(--color-text-primary); }
 .sugg-item:hover { background: var(--color-background-secondary); }
-.signal-banner { border-radius: var(--border-radius-lg); padding: 6px 10px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.signal-banner { border-radius: var(--border-radius-lg); padding: 6px 10px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; width: 100%; box-sizing: border-box; }
 .sig-long { background: #EAF3DE; border: 0.5px solid #97C459; }
 .sig-short { background: #FCEBEB; border: 0.5px solid #F09595; }
 .sig-dir { font-size: 13px; font-weight: 600; }
@@ -183,7 +183,7 @@
 .liq-hm-leglbl { font-size: 9px; color: #444; }
 
 /* PANEL TENDENCIA */
-.trend-panel { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 10px; margin-bottom: 8px; }
+.trend-panel { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 8px; margin-bottom: 8px; overflow: hidden; }
 .trend-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .trend-title { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
 .trend-updated { font-size: 10px; color: var(--color-text-tertiary); }
@@ -360,10 +360,10 @@
         </div>
 
       <!-- HEATMAP LIQUIDEZ PRINCIPAL -->
-      <div style="background:#080810;border-radius:var(--border-radius-lg);overflow:hidden;margin-bottom:10px;height:185px;width:100%;">
-        <div style="background:#0e0e1a;padding:5px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1a1a28;flex-wrap:wrap;gap:4px;">
+      <div style="background:#080810;border-radius:var(--border-radius-lg);overflow:hidden;margin-bottom:10px;height:155px;max-height:155px;">
+        <div style="background:#0e0e1a;padding:5px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1a1a28;">
           <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:10px;font-weight:500;color:#d0d0e0;">Heatmap de liquidez · Binance live</span>
+            <span style="font-size:10px;font-weight:500;color:#d0d0e0;">Heatmap liquidez · Live</span>
             <span style="font-size:10px;color:#00e676;" id="liqHmPrice">-</span>
             <span style="font-size:9px;padding:1px 6px;border-radius:999px;background:#0a2a0a;color:#00c853;border:1px solid #1a5a1a;" id="liqHmBadge">●</span>
           </div>
@@ -371,21 +371,21 @@
             <button class="hm-ctrl" onclick="liqHmTogglePool(25,this)">25x</button>
             <button class="hm-ctrl active" onclick="liqHmTogglePool(50,this)">50x</button>
             <button class="hm-ctrl" onclick="liqHmTogglePool(100,this)">100x</button>
-            <span style="width:1px;height:10px;background:#333;"></span>
+            <span style="width:1px;height:10px;background:#333;margin:0 2px;"></span>
             <button class="hm-ctrl active" onclick="liqHmSetTF('1m',this)">1m</button>
             <button class="hm-ctrl" onclick="liqHmSetTF('5m',this)">5m</button>
             <button class="hm-ctrl" onclick="liqHmRefresh()" style="color:#60a0ff;">&#8635;</button>
           </div>
         </div>
-        <div style="display:flex;height:128px;overflow:hidden;">
-          <div style="width:58px;flex-shrink:0;background:#0b0b16;border-right:1px solid #181828;position:relative;" id="liqHmYAxis"></div>
+        <div style="display:flex;height:105px;overflow:hidden;">
+          <div style="width:58px;flex-shrink:0;background:#0b0b16;border-right:1px solid #181828;position:relative;overflow:hidden;" id="liqHmYAxis"></div>
           <div style="flex:1;position:relative;overflow:hidden;" id="liqHmCanvasWrap">
-            <canvas id="liqHmCanvas"></canvas>
-            <div style="position:absolute;right:0;background:#00c853;color:#000;font-size:9px;font-weight:600;padding:1px 5px;transform:translateY(-50%);pointer-events:none;z-index:5;" id="liqHmPriceTag">-</div>
+            <canvas id="liqHmCanvas" style="display:block;"></canvas>
+            <div style="position:absolute;right:0;top:50%;background:#00c853;color:#000;font-size:9px;font-weight:600;padding:1px 5px;pointer-events:none;z-index:5;transform:translateY(-50%);" id="liqHmPriceTag">-</div>
           </div>
         </div>
-        <div style="background:#0b0b16;border-top:1px solid #181828;padding:2px 0 2px 58px;display:flex;overflow:hidden;" id="liqHmXAxis"></div>
-        <div style="height:18px;background:#050508;border-top:1px solid #151520;display:flex;align-items:flex-end;padding:1px 0 0 58px;" id="liqHmVol"></div>
+        <div style="background:#0b0b16;border-top:1px solid #181828;padding:2px 0 2px 58px;display:flex;overflow:hidden;height:16px;" id="liqHmXAxis"></div>
+        <div style="height:16px;background:#050508;border-top:1px solid #151520;display:flex;align-items:flex-end;padding:1px 0 0 58px;overflow:hidden;" id="liqHmVol"></div>
       </div>
     </div>
     <div class="side">
