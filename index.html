@@ -1,6 +1,6 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-.app { background: var(--color-background-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+.app { background: var(--color-background-tertiary); border-radius: var(--border-radius-lg); overflow-x: hidden; overflow-y: auto; }
 .topbar { background: var(--color-background-primary); border-bottom: 0.5px solid var(--color-border-tertiary); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
 .logo { font-size: 15px; font-weight: 500; color: var(--color-text-primary); display: flex; align-items: center; gap: 8px; }
 .live-badge { font-size: 11px; padding: 2px 8px; border-radius: var(--border-radius-md); background: var(--color-background-success); color: var(--color-text-success); }
@@ -25,7 +25,7 @@
 .sig-meta { font-size: 10px; margin-top: 2px; }
 .sig-long .sig-meta { color: #3B6D11; opacity:.85; }
 .sig-short .sig-meta { color: #A32D2D; opacity:.85; }
-.levels { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 4px; margin-bottom: 6px; width: 100%; }
+.levels { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr 1fr 1.2fr; gap: 4px; margin-bottom: 6px; width: 100%; }
 .lv { border-radius: var(--border-radius-md); padding: 7px 6px; position: relative; min-width: 0; }
 .lv-entry { background: var(--color-background-secondary); border: 1.5px solid #639922; }
 .lv-tp1 { background: #EAF3DE; }
@@ -34,10 +34,10 @@
 .lv-low { background: #EAF3DE; border: 1.5px solid #97C459; }
 .lv-med { background: #FEF3DC; border: 1.5px solid #F5C842; }
 .lv-high { background: #FCEBEB; border: 1.5px solid #F09595; }
-.lv-lbl { font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: .02em; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lv-lbl { font-size: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: .02em; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lv-entry .lv-lbl { color: #3B6D11; } .lv-tp1 .lv-lbl { color: #3B6D11; } .lv-tp2 .lv-lbl { color: #2a5a08; }
 .lv-sl .lv-lbl { color: #A32D2D; } .lv-low .lv-lbl { color: #3B6D11; } .lv-med .lv-lbl { color: #854F0B; } .lv-high .lv-lbl { color: #A32D2D; }
-.lv-val { font-size: 11px; font-weight: 600; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lv-val { font-size: 10px; font-weight: 600; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lv-entry .lv-val { color: #3B6D11; font-size: 11px; }
 .lv-pct { font-size: 9px; color: var(--color-text-secondary); margin-top: 1px; }
 .ia-pill { position: absolute; top: 3px; right: 3px; font-size: 7px; color: white; padding: 1px 3px; border-radius: 999px; }
@@ -222,7 +222,7 @@
     </div>
   </div>
   <div class="main">
-    <div>
+    <div style="min-width:0;overflow:hidden;">
       <div style="position:relative;margin-bottom:10px;">
         <div class="search-row">
           <input class="coin-input" id="coinInput" type="text" placeholder="Ej: BTC, ETH, SOL..." autocomplete="off"
@@ -243,11 +243,11 @@
         </div>
       </div>
       <div class="levels">
-        <div class="lv lv-entry"><div class="ia-pill" style="background:#3B6D11;">IA</div><div class="lv-lbl">Entrada óptima</div><div class="lv-val" id="entryVal">$67,240</div><div class="lv-pct" id="entryNote">Soporte + EMA + volumen</div></div>
+        <div class="lv lv-entry"><div class="ia-pill" style="background:#3B6D11;">IA</div><div class="lv-lbl">Entrada</div><div class="lv-val" id="entryVal">$67,240</div><div class="lv-pct" id="entryNote">Soporte + EMA + volumen</div></div>
         <div class="lv lv-tp1"><div class="lv-lbl">TP 1</div><div class="lv-val" id="tp1val">$71,800</div><div class="lv-pct" id="tp1pct">+6.8%</div></div>
         <div class="lv lv-tp2"><div class="lv-lbl">TP 2</div><div class="lv-val" id="tp2val">$75,500</div><div class="lv-pct" id="tp2pct">+12.3%</div></div>
-        <div class="lv lv-sl"><div class="lv-lbl">Stop loss</div><div class="lv-val" id="slval">$65,600</div><div class="lv-pct" id="slpct">-2.4%</div></div>
-        <div class="lv lv-low" id="levBox"><div class="ia-pill" id="levBadge" style="background:#3B6D11;">IA</div><div class="lv-lbl">Apalancamiento</div><div class="lv-big c-low" id="levVal">10x</div><div class="vbar-wrap"><div class="vbar-fill" id="vbarFill" style="width:28%;background:#639922;"></div></div><div class="vbar-lbl" id="vbarLbl" style="color:#3B6D11;">Volatilidad baja</div></div>
+        <div class="lv lv-sl"><div class="lv-lbl">SL</div><div class="lv-val" id="slval">$65,600</div><div class="lv-pct" id="slpct">-2.4%</div></div>
+        <div class="lv lv-low" id="levBox"><div class="ia-pill" id="levBadge" style="background:#3B6D11;">IA</div><div class="lv-lbl">Apal.</div><div class="lv-big c-low" id="levVal">10x</div><div class="vbar-wrap"><div class="vbar-fill" id="vbarFill" style="width:28%;background:#639922;"></div></div><div class="vbar-lbl" id="vbarLbl" style="color:#3B6D11;">Volatilidad baja</div></div>
       </div>
       <div class="conf-card">
         <div class="card-title" style="margin-bottom:6px;">Por que esta entrada?</div>
@@ -262,13 +262,7 @@
           <span style="font-size:11px;font-weight:500;" id="confNum">80%</span>
         </div>
       </div>
-      <div class="card-title">Indicadores tecnicos</div>
-      <div class="inds">
-        <div class="ind"><div class="ind-n">RSI (14)</div><div class="ind-v" id="rsiVal">42.3</div><div class="ind-s neut" id="rsiStatus">Neutral-bajista</div><div class="bw"><div class="bf" id="rsiBar" style="width:42%;background:#BA7517;"></div></div></div>
-        <div class="ind"><div class="ind-n">MACD</div><div class="ind-v" id="macdVal">Cruce alcista</div><div class="ind-s bull" id="macdStatus">Signal de compra</div><div class="bw"><div class="bf" id="macdBar" style="width:72%;background:#639922;"></div></div></div>
-        <div class="ind"><div class="ind-n">EMA 50 / 200</div><div class="ind-v">Por encima</div><div class="ind-s bull">Tendencia alcista</div><div class="bw"><div class="bf" style="width:80%;background:#639922;"></div></div></div>
-        <div class="ind"><div class="ind-n">Volatilidad (ATR)</div><div class="ind-v" id="atrVal">Baja 1.8%</div><div class="ind-s bull" id="atrStatus">Favorable para 10x</div><div class="bw"><div class="bf" id="atrBar" style="width:28%;background:#639922;"></div></div></div>
-      </div>
+
       <div class="chart-analysis">
         <div class="ca-title">Analisis del grafico</div>
         <div style="margin-bottom:6px;" id="caTags"><span class="ca-tag ca-tag-bull">Tendencia alcista</span><span class="ca-tag ca-tag-bull">Vela envolvente</span><span class="ca-tag ca-tag-neut">Volumen moderado</span></div>
@@ -380,7 +374,7 @@
         <div style="display:flex;height:105px;overflow:hidden;">
           <div style="width:58px;flex-shrink:0;background:#0b0b16;border-right:1px solid #181828;position:relative;overflow:hidden;" id="liqHmYAxis"></div>
           <div style="flex:1;position:relative;overflow:hidden;" id="liqHmCanvasWrap">
-            <canvas id="liqHmCanvas" style="display:block;"></canvas>
+            <canvas id="liqHmCanvas" style="display:block;max-width:100%;"></canvas>
             <div style="position:absolute;right:0;top:50%;background:#00c853;color:#000;font-size:9px;font-weight:600;padding:1px 5px;pointer-events:none;z-index:5;transform:translateY(-50%);" id="liqHmPriceTag">-</div>
           </div>
         </div>
@@ -388,7 +382,16 @@
         <div style="height:16px;background:#050508;border-top:1px solid #151520;display:flex;align-items:flex-end;padding:1px 0 0 58px;overflow:hidden;" id="liqHmVol"></div>
       </div>
     </div>
-    <div class="side">
+    <div class="side" style="min-width:0;overflow:hidden;">
+      <!-- INDICADORES TÉCNICOS -->
+      <div class="card" style="margin-bottom:8px;">
+        <div class="card-title">Indicadores técnicos</div>
+        <div class="ind"><div class="ind-n">RSI (14)</div><div class="ind-v" id="rsiVal">—</div><div class="ind-s neut" id="rsiStatus">—</div><div class="bw"><div class="bf" id="rsiBar" style="width:0%;background:#BA7517;"></div></div></div>
+        <div class="ind" style="margin-top:6px;"><div class="ind-n">MACD</div><div class="ind-v" id="macdVal">—</div><div class="ind-s bull" id="macdStatus">—</div><div class="bw"><div class="bf" id="macdBar" style="width:0%;background:#639922;"></div></div></div>
+        <div class="ind" style="margin-top:6px;"><div class="ind-n">EMA 50 / 200</div><div class="ind-v" id="emaVal">—</div><div class="ind-s bull" id="emaStatus">—</div><div class="bw"><div class="bf" id="emaBar" style="width:0%;background:#639922;"></div></div></div>
+        <div class="ind" style="margin-top:6px;"><div class="ind-n">Volatilidad (ATR)</div><div class="ind-v" id="atrVal">—</div><div class="ind-s bull" id="atrStatus">—</div><div class="bw"><div class="bf" id="atrBar" style="width:0%;background:#639922;"></div></div></div>
+      </div>
+
       <div class="card">
         <div class="card-title"><i class="ti ti-flame" aria-hidden="true" style="font-size:12px;vertical-align:-1px;margin-right:3px;"></i>Mapa de liquidaciones</div>
         <div class="liq-legend">
@@ -481,9 +484,27 @@ function fmtPct(v){ return (v>=0?'+':'')+v.toFixed(2)+'%'; }
    API BINANCE
 ═══════════════════════════════════════════ */
 async function apiFetch(url){
-  const r = await fetch(url);
-  if(!r.ok) throw new Error('API '+r.status);
-  return r.json();
+  // 1. Try direct (works when opening locally or if CORS allowed)
+  try {
+    const r = await fetch(url, {mode:'cors'});
+    if(r.ok) return r.json();
+  } catch(e){}
+  // 2. corsproxy.io
+  try {
+    const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
+    if(r.ok) return r.json();
+  } catch(e){}
+  // 3. allorigins
+  try {
+    const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url));
+    if(r.ok){ const d=await r.json(); return JSON.parse(d.contents); }
+  } catch(e){}
+  // 4. thingproxy
+  try {
+    const r = await fetch('https://thingproxy.freeboard.io/fetch/' + url);
+    if(r.ok) return r.json();
+  } catch(e){}
+  throw new Error('No se pudo conectar a Binance. Intenta abrir la app en Chrome sin extensiones.');
 }
 const fetchKlines = (sym,tf,n)  => apiFetch('https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit='+n);
 const fetchOB     = sym          => apiFetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=100');
@@ -831,6 +852,14 @@ function applySignal(sym, sig, curPrice){
   document.getElementById('macdStatus').className='ind-s '+(sig.macdBull?'bull':'bear');
   document.getElementById('macdBar').style.width=(sig.macdBull?72:30)+'%';
   document.getElementById('macdBar').style.background=sig.macdBull?'#639922':'#E24B4A';
+  if(document.getElementById('emaVal')){
+    const emaAbove = sig.isLong;
+    document.getElementById('emaVal').textContent = fmt(sig.e50)+' / '+fmt(sig.e200);
+    document.getElementById('emaStatus').textContent = emaAbove?'Precio sobre EMA200':'Precio bajo EMA200';
+    document.getElementById('emaStatus').className = 'ind-s '+(emaAbove?'bull':'bear');
+    document.getElementById('emaBar').style.width = (emaAbove?80:30)+'%';
+    document.getElementById('emaBar').style.background = emaAbove?'#639922':'#E24B4A';
+  }
   document.getElementById('atrVal').textContent=sig.volLabel+' · ATR '+sig.atrPct.toFixed(2)+'%';
   document.getElementById('atrStatus').textContent='Apal. sugerido: '+sig.lev+'x';
   document.getElementById('atrStatus').className='ind-s '+(sig.volBg==='lv-low'?'bull':sig.volBg==='lv-med'?'neut':'bear');
@@ -1050,9 +1079,9 @@ function liqHmBuildLevels(ob, candles) {
 function liqHmRender(ob, candles, curPrice) {
   liqHmLastOB=ob; liqHmLastCandles=candles;
   const wrap = document.getElementById('liqHmCanvasWrap');
-  const W = Math.min(wrap.clientWidth || 580, wrap.clientWidth);
+  const W = Math.min(wrap.clientWidth || 400, 900);
   const cellW = W / LIQ_COLS;
-  const H = LIQ_ROWS * LIQ_CELL_H; // ~70px total
+  const H = LIQ_ROWS * LIQ_CELL_H;
   const canvas = document.getElementById('liqHmCanvas');
   canvas.width=W; canvas.height=H; canvas.style.width=W+'px'; canvas.style.height=H+'px';
   const ctx = canvas.getContext('2d');
