@@ -40,21 +40,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .sugg-item:hover { background: #f5f5f0; }
 
 /* SIGNAL BANNER */
-.signal-banner { border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; }
+.signal-banner { border-radius: 10px; padding: 8px 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .sig-long  { background: #EAF3DE; border: 1px solid #97C459; }
 .sig-short { background: #FCEBEB; border: 1px solid #F09595; }
 .sig-wait  { background: #FFF8E7; border: 1px solid #F5C842; }
-.sig-dir { font-size: 18px; font-weight: 700; }
+.sig-dir { font-size: 16px; font-weight: 700; line-height: 1.2; }
 .sig-long  .sig-dir { color: #3B6D11; }
 .sig-short .sig-dir { color: #A32D2D; }
 .sig-wait  .sig-dir { color: #854F0B; }
-.sig-sub { font-size: 10px; margin-top: 2px; opacity: 0.8; }
+.sig-sub { font-size: 10px; margin-top: 1px; opacity: 0.8; }
 .sig-long  .sig-sub { color: #3B6D11; }
 .sig-short .sig-sub { color: #A32D2D; }
 .sig-wait  .sig-sub { color: #854F0B; }
-.sig-rr { text-align: right; }
-.sig-rr-lbl { font-size: 10px; color: #888; }
-.sig-rr-val { font-size: 15px; font-weight: 600; }
+.sig-rr { text-align: right; flex-shrink: 0; }
+.sig-rr-lbl { font-size: 9px; color: #888; }
+.sig-rr-val { font-size: 13px; font-weight: 600; line-height: 1.3; }
 
 /* LEVELS */
 .levels { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 5px; }
@@ -246,15 +246,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     </div>
 
     <!-- BANNER SEÑAL -->
-    <div class="signal-banner sig-wait" id="signalBanner">
-      <div>
-        <div style="font-size:10px;font-weight:600;color:#854F0B;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;" id="signalPair">Ingresa un par para analizar</div>
-        <div class="sig-dir" id="signalDir">— ESPERANDO —</div>
-        <div class="sig-sub" id="signalMeta">Escribe un par y presiona Analizar</div>
+    <div class="signal-banner sig-wait" id="signalBanner" style="padding:7px 12px;">
+      <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+        <div>
+          <div style="font-size:9px;font-weight:600;color:#854F0B;text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px;white-space:nowrap;" id="signalPair">Ingresa un par para analizar</div>
+          <div class="sig-dir" id="signalDir" style="font-size:15px;font-weight:700;line-height:1.2;">— ESPERANDO —</div>
+        </div>
+        <div style="font-size:10px;opacity:0.8;color:#854F0B;flex:1;min-width:0;" id="signalMeta">Escribe un par y presiona Analizar</div>
       </div>
-      <div class="sig-rr">
-        <div class="sig-rr-lbl">R:R</div>
-        <div class="sig-rr-val" id="rrVal">—</div>
+      <div style="text-align:right;flex-shrink:0;margin-left:8px;">
+        <div style="font-size:9px;color:#888;">R:R</div>
+        <div style="font-size:12px;font-weight:600;white-space:nowrap;" id="rrVal">—</div>
       </div>
     </div>
 
