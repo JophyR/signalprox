@@ -80,12 +80,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 /* CONFLUENCE */
 .conf-card { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 10px; }
-.conf-row { display: flex; align-items: center; font-size: 11px; margin-bottom: 4px; }
-.conf-lbl { color: #666; flex: 1; }
-.conf-val { font-weight: 500; margin: 0 8px; font-size: 11px; }
+.conf-row { display: flex; align-items: center; font-size: 10px; margin-bottom: 0; gap: 4px; }
+.conf-lbl { color: #666; flex-shrink: 0; font-size:10px; }
+.conf-val { font-weight: 500; font-size: 10px; flex: 1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .dot-g { background: #639922; } .dot-y { background: #BA7517; } .dot-r { background: #E24B4A; }
-.conf-bar-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
+.conf-bar-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding-top: 6px; border-top: 1px solid #eee; }
 .conf-bar { flex: 1; height: 5px; background: #eee; border-radius: 3px; }
 .conf-bar-fill { height: 5px; border-radius: 3px; transition: width .4s; }
 .conf-pct { font-size: 11px; font-weight: 600; }
@@ -298,16 +298,39 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
     <!-- CONFLUENCIA -->
     <div class="conf-card">
-      <div class="card-title">¿Por qué esta entrada?</div>
-      <div class="conf-row"><span class="conf-lbl" id="c1l">Soporte clave (EMA 200)</span><span class="conf-val" id="c1v">—</span><span class="dot" id="c1d" style="background:#ccc;"></span></div>
-      <div class="conf-row"><span class="conf-lbl" id="c2l">Order Book — muro</span><span class="conf-val" id="c2v">—</span><span class="dot" id="c2d" style="background:#ccc;"></span></div>
-      <div class="conf-row"><span class="conf-lbl" id="c3l">Zona de liquidaciones</span><span class="conf-val" id="c3v">—</span><span class="dot" id="c3d" style="background:#ccc;"></span></div>
-      <div class="conf-row"><span class="conf-lbl">RSI (4H)</span><span class="conf-val" id="c4v">—</span><span class="dot" id="c4d" style="background:#ccc;"></span></div>
-      <div class="conf-row"><span class="conf-lbl">MACD</span><span class="conf-val" id="c5v">—</span><span class="dot" id="c5d" style="background:#ccc;"></span></div>
-      <div class="conf-bar-row">
-        <span style="font-size:10px;color:#888;">Confluencia</span>
-        <div class="conf-bar"><div class="conf-bar-fill" id="confFill" style="width:0%;background:#639922;"></div></div>
-        <span class="conf-pct" id="confNum" style="color:#639922;">—</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div class="card-title" style="margin-bottom:0;">¿Por qué esta entrada?</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="conf-bar" style="width:80px;"><div class="conf-bar-fill" id="confFill" style="width:0%;background:#639922;"></div></div>
+          <span id="confNum" style="color:#639922;font-size:11px;font-weight:600;">—</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 16px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;">
+          <span class="dot" id="c1d" style="background:#ccc;flex-shrink:0;"></span>
+          <span style="color:#666;flex-shrink:0;">EMA 200</span>
+          <span style="font-weight:500;color:#333;margin-left:4px;" id="c1v">—</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;">
+          <span class="dot" id="c4d" style="background:#ccc;flex-shrink:0;"></span>
+          <span style="color:#666;flex-shrink:0;">RSI 4H</span>
+          <span style="font-weight:500;color:#333;margin-left:4px;" id="c4v">—</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;">
+          <span class="dot" id="c2d" style="background:#ccc;flex-shrink:0;"></span>
+          <span style="color:#666;flex-shrink:0;">Order Book</span>
+          <span style="font-weight:500;color:#333;margin-left:4px;" id="c2v">—</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;">
+          <span class="dot" id="c5d" style="background:#ccc;flex-shrink:0;"></span>
+          <span style="color:#666;flex-shrink:0;">MACD</span>
+          <span style="font-weight:500;color:#333;margin-left:4px;" id="c5v">—</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;">
+          <span class="dot" id="c3d" style="background:#ccc;flex-shrink:0;"></span>
+          <span style="color:#666;flex-shrink:0;">Liq. zona</span>
+          <span style="font-weight:500;color:#333;margin-left:4px;" id="c3v">—</span>
+        </div>
       </div>
     </div>
 
