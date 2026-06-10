@@ -43,7 +43,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .signal-banner { border-radius: 10px; padding: 8px 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .sig-long  { background: #EAF3DE; border: 1px solid #97C459; }
 .sig-short { background: #FCEBEB; border: 1px solid #F09595; }
-.sig-wait  { background: #FFF8E7; border: 1px solid #F5C842; }
+.sig-wait   { background: #FFF8E7; border: 1px solid #F5C842; }
+.sig-bounce { background: #FFF0D0; border: 1px solid #E8A020; }
+.sig-bounce .sig-dir { color: #8B5000; }
+.sig-bounce .sig-sub { color: #8B5000; opacity:.85; }
 .sig-dir { font-size: 16px; font-weight: 700; line-height: 1.2; }
 .sig-long  .sig-dir { color: #3B6D11; }
 .sig-short .sig-dir { color: #A32D2D; }
@@ -489,6 +492,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
           <div class="hm-ctrl-row">
             <button class="hm-ctrl active" onclick="hmMiniSetTF('1m',this)">1m</button>
             <button class="hm-ctrl" onclick="hmMiniSetTF('5m',this)">5m</button>
+            <button class="hm-ctrl" onclick="hmMiniSetTF('15m',this)">15m</button>
+            <button class="hm-ctrl" onclick="hmMiniSetTF('1h',this)">1h</button>
             <button class="hm-ctrl" onclick="hmMiniRefresh()" style="color:#60a0ff;">&#8635;</button>
           </div>
         </div>
@@ -598,7 +603,23 @@ function parseC(raw){return raw.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],cl:+k[4
    ANÁLISIS POR TEMPORALIDAD
 ════════════════════════════════════════ */
 function analyzeTF(candles, curPrice){
-  if(candles.length<210) return null;
+  if(candles.length<205) return null;
+  // Need at least 200 candles for EMA200 to be meaningful
+  if(candles.length<220){
+    // With limited data, only use EMA50 and RSI, skip EMA200
+    const cls=candles.map(c=>c.cl);
+    const e50=calcEMA(cls,50); const E50=e50[e50.length-1];
+    const rsiA=calcRSI(cls,14); const rsi=rsiA[rsiA.length-1];
+    const macdD=calcMACD(cls);
+    const mL=macdD.macd[macdD.macd.length-1],sL=macdD.signal[macdD.signal.length-1];
+    const hL=macdD.hist[macdD.hist.length-1],hP=macdD.hist[macdD.hist.length-2];
+    let score=0;
+    if(curPrice>E50) score+=2; else score-=2;
+    if(rsi<35) score+=2; else if(rsi>68) score-=2; else if(rsi<50) score+=0.3; else score-=0.3;
+    const macdBull=mL>sL&&hL>hP;
+    if(macdBull) score+=1.5; else if(mL<sL&&hL<hP) score-=1.5;
+    return{dir:score>=1.5?'LONG':score<=-1.5?'SHORT':'NEUTRAL',score,rsi,e50:E50,e200:E50,macdBull};
+  }
   const cls=candles.map(c=>c.cl);
   const e50=calcEMA(cls,50),e200=calcEMA(cls,200);
   const rsiA=calcRSI(cls,14); const rsi=rsiA[rsiA.length-1];
@@ -623,6 +644,63 @@ function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
   const c4=parseC(raw4h),c1=parseC(raw1h),c15=parseC(raw15m);
   const tf4=analyzeTF(c4,curPrice),tf1=analyzeTF(c1,curPrice),tf15=analyzeTF(c15,curPrice);
   if(!tf4) return null;
+
+  // ── DETECCIÓN DE REBOTE ALCISTA (LONG contra tendencia bajista) ──
+  // Condiciones: 4H bajista + RSI sobreventa en 1H o 15M + MACD cruce alcista en menor TF
+  if(tf4.dir==='SHORT'){
+    const rsi1h   = tf1  ? tf1.rsi  : 50;
+    const rsi15m  = tf15 ? tf15.rsi : 50;
+    const macd1h  = tf1  ? tf1.macdBull  : false;
+    const macd15m = tf15 ? tf15.macdBull : false;
+    const rsiOversold = rsi1h < 35 || rsi15m < 32;
+    const macdBounce  = macd1h || macd15m;
+    // Soporte real del OB
+    const bids = ob.bids.map(([p,q])=>({p:+p,q:+q})).sort((a,b)=>b.q-a.q);
+    const topBid = bids[0]||{p:curPrice*0.998,q:0};
+    const nearBidWall = topBid.p < curPrice && (curPrice-topBid.p)/curPrice < 0.005;
+    // Score de rebote: necesita al menos 2 de 3 condiciones
+    const bounceScore = (rsiOversold?1:0) + (macdBounce?1:0) + (nearBidWall?1:0);
+    if(bounceScore >= 2){
+      // Calcular entrada, SL y TPs para el rebote
+      const cls4=c4.map(c=>c.cl);
+      const atr=calcATR(c4,14);
+      const atrPct=(atr/curPrice)*100;
+      // Entrada cerca del bid wall o precio actual
+      const entry = nearBidWall ? topBid.p : curPrice*0.9985;
+      // SL más ajustado para rebotes (solo 0.8-1.5x ATR)
+      const slDist = Math.max(atrPct*0.9, 0.6);
+      const tp1D=slDist*1.0, tp2D=slDist*2.0, tp3D=slDist*3.0;
+      const sl =entry*(1-slDist/100);
+      const tp1=entry*(1+tp1D/100);
+      const tp2=entry*(1+tp2D/100);
+      const tp3=entry*(1+tp3D/100);
+      // Apalancamiento más conservador para rebotes
+      const lev = atrPct<2?5:3;
+      const levLbl = 'Rebote — apal. reducido';
+      const confPct = Math.min(70, Math.max(40, 40 + bounceScore*10 + (rsi1h<30?10:0) + (rsi15m<30?10:0)));
+      const rec=c4.slice(-60);
+      const pivL=[];
+      for(let i=2;i<rec.length-2;i++) if(rec[i].l<rec[i-1].l&&rec[i].l<rec[i+1].l) pivL.push(rec[i].l);
+      const nearSup=pivL.filter(p=>p<curPrice).sort((a,b)=>b-a)[0]||curPrice*0.97;
+      const nearRes=pivL.filter(p=>p>curPrice).sort((a,b)=>a-b)[0]||curPrice*1.03;
+      const bQ=ob.bids.slice(0,20).reduce((a,[p,q])=>a+(+q),0);
+      const aQ=ob.asks.slice(0,20).reduce((a,[p,q])=>a+(+q),0);
+      const obPct=Math.round(bQ/(bQ+aQ)*100);
+      const e50=calcEMA(cls4,50)[calcEMA(cls4,50).length-1];
+      const e200=calcEMA(cls4,200)[calcEMA(cls4,200).length-1];
+      return{
+        valid:true, isLong:true, isBounce:true,
+        entry,tp1,tp2,tp3,sl,slDist,tp1D,tp2D,tp3D,
+        lev,levLbl,confPct,aligned:bounceScore,
+        strLabel:'Rebote alcista ('+bounceScore+'/3 condiciones)',
+        rsi:rsi1h<rsi15m?rsi1h:rsi15m,
+        atrPct,e50,e200,macdBull:macdBounce,obPct,nearSup,nearRes,
+        tf4dir:'SHORT',tf1dir:tf1?tf1.dir:'N/D',tf15dir:tf15?tf15.dir:'N/D',
+        tf4sc:tf4.score.toFixed(1),tf1sc:tf1?tf1.score.toFixed(1):'—',tf15sc:tf15?tf15.score.toFixed(1):'—',
+        bounceConditions:{rsiOversold,macdBounce,nearBidWall}
+      };
+    }
+  }
 
   if(tf4.dir==='NEUTRAL') return{valid:false,reason:'Sin tendencia clara en 4H — esperar dirección'};
   if(tf1&&tf1.dir!=='NEUTRAL'&&tf1.dir!==tf4.dir) return{valid:false,reason:'1H contradice a 4H — sin confluencia'};
@@ -716,7 +794,7 @@ function applySignal(sym,sig,curPrice){
   const dc={g:'#639922',y:'#BA7517',r:'#E24B4A'};
 
   // Banner
-  el('signalBanner').className='signal-banner '+(L?'sig-long':'sig-short');
+  el('signalBanner').className='signal-banner '+(sig.isBounce?'sig-bounce':L?'sig-long':'sig-short');
   el('signalPair').textContent='Señal activa · '+sym+'/USDT · 4H+1H+15M';
   el('signalPair').style.color=L?'#3B6D11':'#A32D2D';
   el('signalDir').textContent=(L?'LONG ↑':'SHORT ↓')+' · '+sig.aligned+'/3 TF';
@@ -735,18 +813,28 @@ function applySignal(sym,sig,curPrice){
   const cc=sig.confPct>=80?'#639922':sig.confPct>=60?'#F5C842':'#E24B4A';
   el('confFill').style.width=sig.confPct+'%'; el('confFill').style.background=cc;
   el('confNum').textContent=sig.confPct+'%'; el('confNum').style.color=cc;
-  el('c1v').textContent=fmt(sig.e200); el('c1d').style.background=dc[curPrice>sig.e200?'g':'r'];
-  el('c2v').textContent=fmt(curPrice>sig.e50?sig.e50:sig.e200); el('c2d').style.background=dc['g'];
-  el('c3v').textContent=fmt(L?sig.nearSup:sig.nearRes); el('c3d').style.background=dc['g'];
-  el('c4v').textContent=sig.rsi.toFixed(1); el('c4d').style.background=dc[sig.rsi<40?'g':sig.rsi>65?'r':'y'];
-  el('c5v').textContent=sig.macdBull?'Alcista':'Bajista'; el('c5d').style.background=dc[sig.macdBull?'g':'r'];
+  if(sig.isBounce){
+    const bc=sig.bounceConditions;
+    el('c1v').textContent='RSI '+sig.rsi.toFixed(1)+' (sobreventa)'; el('c1d').style.background=dc['g'];
+    el('c2v').textContent=sig.macdBull?'Cruce alcista':'Sin cruce'; el('c2d').style.background=dc[sig.macdBull?'g':'r'];
+    el('c3v').textContent=bc.nearBidWall?'Muro comprador cerca':'Sin muro cercano'; el('c3d').style.background=dc[bc.nearBidWall?'g':'y'];
+    el('c4v').textContent='4H SHORT (macro bajista)'; el('c4d').style.background=dc['r'];
+    el('c5v').textContent=sig.confPct+'% rebote'; el('c5d').style.background=dc['y'];
+  } else {
+    el('c1v').textContent=fmt(sig.e200); el('c1d').style.background=dc[curPrice>sig.e200?'g':'r'];
+    el('c2v').textContent=fmt(curPrice>sig.e50?sig.e50:sig.e200); el('c2d').style.background=dc['g'];
+    el('c3v').textContent=fmt(L?sig.nearSup:sig.nearRes); el('c3d').style.background=dc['g'];
+    el('c4v').textContent=sig.rsi.toFixed(1); el('c4d').style.background=dc[sig.rsi<40?'g':sig.rsi>65?'r':'y'];
+    el('c5v').textContent=sig.macdBull?'Alcista':'Bajista'; el('c5d').style.background=dc[sig.macdBull?'g':'r'];
+  }
 
   // Análisis texto
   const tags=[
-    {t:'Tendencia '+(L?'alcista':'bajista'),c:L?'bull':'bear'},
-    {t:sig.strLabel,c:sig.aligned===3?'bull':sig.aligned===2?'neut':'bear'},
+    {t:sig.isBounce?'⚡ Rebote contra tendencia':'Tendencia '+(L?'alcista':'bajista'),c:sig.isBounce?'neut':L?'bull':'bear'},
+    {t:sig.strLabel,c:sig.aligned===3?'bull':sig.aligned>=2?'neut':'bear'},
     {t:sig.rsi<35?'RSI sobreventa':sig.rsi>68?'RSI sobrecompra':'RSI neutro',c:sig.rsi<40?'bull':sig.rsi>65?'bear':'neut'},
     {t:sig.macdBull?'MACD alcista':'MACD bajista',c:sig.macdBull?'bull':'bear'},
+    ...(sig.isBounce?[{t:'⚠️ 4H bajista — riesgo alto',c:'bear'}]:[]),
   ];
   el('analysisTags').innerHTML=tags.map(t=>'<span class="tag tag-'+t.c+'">'+t.t+'</span>').join('');
   el('analysisText').textContent='4H: '+(L?'alcista':'bajista')+' (RSI '+sig.rsi.toFixed(1)+
@@ -972,7 +1060,8 @@ async function liqHmRefresh(){
   const statusEl=el('liqHmBadge');
   if(statusEl){statusEl.className='hm-mini-status hm-load';statusEl.textContent='...';}
   try{
-    const[klines,ob,price]=await Promise.all([fetchKlines(liqHmSymbol,liqHmTF,LIQ_COLS+10),fetchOB(liqHmSymbol),fetchPrice(liqHmSymbol)]);
+    const cols=liqHmTF==='1h'?LIQ_COLS:liqHmTF==='15m'?LIQ_COLS:LIQ_COLS;
+    const[klines,ob,price]=await Promise.all([fetchKlines(liqHmSymbol,liqHmTF,cols+10),fetchOB(liqHmSymbol),fetchPrice(liqHmSymbol)]);
     const candles=parseC(klines);
     renderHeatmapCanvas('liqHmCanvas','liqHmCanvasWrap','liqHmYAxis','liqHmXAxis','liqHmVol','liqHmPriceTag','liqHmPrice','liqHmBadge',ob,candles,price,LIQ_COLS,LIQ_ROWS,LIQ_CELL_H,liqHmPoolMult);
     if(statusEl){statusEl.className='hm-mini-status hm-live';statusEl.textContent='● Live';}
@@ -984,7 +1073,7 @@ function liqHmTogglePool(v,btn){
   liqHmPoolMult=Math.max(0.5,m/33);liqHmRefresh();
 }
 function liqHmSetTF(tf,btn){
-  document.querySelectorAll('.hm-ctrl').forEach(b=>{if(['1m','5m'].includes(b.textContent))b.classList.remove('active');});
+  document.querySelectorAll('.hm-ctrl').forEach(b=>{if(['1m','5m','15m','1h'].includes(b.textContent))b.classList.remove('active');});
   btn.classList.add('active');liqHmTF=tf;liqHmRefresh();
 }
 
@@ -1002,7 +1091,7 @@ async function hmMiniRefresh(){
   }catch(e){if(s){s.className='hm-mini-status hm-err';s.textContent='✕';}}
 }
 function hmMiniSetTF(tf,btn){
-  document.querySelectorAll('.hm-ctrl').forEach(b=>{if(['1m','5m'].includes(b.textContent))b.classList.remove('active');});
+  document.querySelectorAll('.hm-ctrl').forEach(b=>{if(['1m','5m','15m','1h'].includes(b.textContent))b.classList.remove('active');});
   btn.classList.add('active');hmMiniTF=tf;hmMiniRefresh();
 }
 
@@ -1010,7 +1099,20 @@ function hmMiniSetTF(tf,btn){
    AUTOCOMPLETADO
 ════════════════════════════════════════ */
 let topSymbols=[];
-(async()=>{try{topSymbols=await fetchTop();}catch(e){}})();
+// Priority coins always shown first
+const priorityCoins = ['BTC','ETH','SOL','BNB','XRP','HYPE','DOGE','AVAX','LINK','ADA','MATIC','DOT','NEAR','SUI','WIF','BONK','PEPE'];
+(async()=>{
+  try{
+    topSymbols=await fetchTop();
+    // Ensure priority coins are at the top if they exist
+    const priorityList = priorityCoins.map(sym=>{
+      const found = topSymbols.find(c=>c.sym===sym);
+      return found || null;
+    }).filter(Boolean);
+    const rest = topSymbols.filter(c=>!priorityCoins.includes(c.sym));
+    topSymbols = [...priorityList, ...rest];
+  }catch(e){}
+})();
 function onCoinInput(input){
   const val=input.value.toUpperCase().replace('/USDT','').trim();
   const sugg=el('suggBox');
@@ -1040,7 +1142,7 @@ async function doAnalyze(raw){
   try{
     const[r4h,r1h,r15m,ob,price]=await Promise.all([
       fetchKlines(fullSym,'4h',210),fetchKlines(fullSym,'1h',210),
-      fetchKlines(fullSym,'15m',210),fetchOB(fullSym),fetchPrice(fullSym)
+      fetchKlines(fullSym,'15m',250),fetchOB(fullSym),fetchPrice(fullSym)
     ]);
     const sig=computeSignal(r4h,r1h,r15m,ob,price);
     if(!sig) throw new Error('Datos insuficientes');
