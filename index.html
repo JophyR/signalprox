@@ -563,40 +563,46 @@ const el = id => document.getElementById(id);
    API BINANCE (con proxies CORS)
 ════════════════════════════════════════ */
 async function apiFetch(url){
+  // Add cache-busting to prevent stale proxy responses
+  const bust = '&_='+Date.now();
+  const urlB = url + (url.includes('?')?bust:bust.replace('&','?'));
   // 1. Directo
-  try{ const r=await fetch(url,{mode:'cors'}); if(r.ok) return r.json(); }catch(e){}
+  try{ const r=await fetch(urlB,{mode:'cors',cache:'no-store'}); if(r.ok) return r.json(); }catch(e){}
   // 2. corsproxy.io
-  try{ const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(url)); if(r.ok) return r.json(); }catch(e){}
+  try{ const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(urlB),{cache:'no-store'}); if(r.ok) return r.json(); }catch(e){}
   // 3. allorigins
-  try{ const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(url)); if(r.ok){const d=await r.json();return JSON.parse(d.contents);} }catch(e){}
+  try{ const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(urlB),{cache:'no-store'}); if(r.ok){const d=await r.json();return JSON.parse(d.contents);} }catch(e){}
   throw new Error('Sin conexión a Binance');
 }
 async function fetchKlines(sym, tf, n){
   const sUrl='https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit='+n;
   const fUrl='https://fapi.binance.com/fapi/v1/klines?symbol='+sym+'&interval='+tf+'&limit='+n;
-  try{const r=await fetch(sUrl,{mode:'cors'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl));if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
-  try{const r=await fetch(fUrl,{mode:'cors'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
+  const _t=Date.now();
+  try{const r=await fetch(sUrl+'&_='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl+'&_='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
+  try{const r=await fetch(fUrl+'&_='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl+'&_='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
   try{const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();const p=JSON.parse(d.contents);if(p&&p.length>0)return p;}}catch(e){}
   throw new Error('Klines no disponibles para '+sym);
 }
 async function fetchOB(sym){
   const sUrl='https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=50';
   const fUrl='https://fapi.binance.com/fapi/v1/depth?symbol='+sym+'&limit=50';
-  try{const r=await fetch(sUrl,{mode:'cors'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl));if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
-  try{const r=await fetch(fUrl,{mode:'cors'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
+  const _t=Date.now();
+  try{const r=await fetch(sUrl+'&_='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl+'&_='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
+  try{const r=await fetch(fUrl+'&_='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl+'&_='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
   return {bids:[],asks:[]};
 }
 async function fetchPrice(sym){
   const sUrl='https://api.binance.com/api/v3/ticker/price?symbol='+sym;
   const fUrl='https://fapi.binance.com/fapi/v1/ticker/price?symbol='+sym;
-  try{const r=await fetch(sUrl,{mode:'cors'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl));if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch(fUrl,{mode:'cors'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
+  const _t=Date.now();
+  try{const r=await fetch(sUrl+'&_='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl+'&_='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
+  try{const r=await fetch(fUrl+'&_='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl+'&_='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
   try{const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();const p=parseFloat(JSON.parse(d.contents).price);if(p>0.00001)return p;}}catch(e){}
   throw new Error('Par no encontrado: '+sym);
 }
