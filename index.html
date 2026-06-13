@@ -573,7 +573,11 @@ async function apiFetch(url){
 }
 const fetchKlines = (sym,tf,n) => apiFetch('https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit='+n);
 const fetchOB     = sym        => apiFetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=100');
-const fetchPrice  = sym        => apiFetch('https://api.binance.com/api/v3/ticker/price?symbol='+sym).then(d=>parseFloat(d.price));
+const fetchPrice  = sym => apiFetch('https://api.binance.com/api/v3/ticker/price?symbol='+sym).then(d=>{
+  const p = parseFloat(d.price);
+  if(!p || p <= 0 || p < 0.000001) throw new Error('Invalid price: '+p);
+  return p;
+});
 const fetchTop    = ()         => apiFetch('https://api.binance.com/api/v3/ticker/24hr').then(data=>
   data.filter(t=>t.symbol.endsWith('USDT')&&!/(DOWN|UP|BEAR|BULL)/.test(t.symbol))
       .sort((a,b)=>parseFloat(b.quoteVolume)-parseFloat(a.quoteVolume))
@@ -876,6 +880,8 @@ function applySignal(sym,sig,curPrice){
   el('rrVal').textContent='1:1 / 1:2 / 1:3';
 
   // Niveles
+  // Sanity check — if price looks wrong (too small), don't update
+  if(sig.entry < 0.000001){ console.warn('Price sanity check failed:', sig.entry); return; }
   el('entryVal').textContent=fmt(sig.entry);
   el('tp1val').textContent=fmt(sig.tp1); el('tp1pct').textContent=fmtPct(L?sig.tp1D:-sig.tp1D);
   el('tp2val').textContent=fmt(sig.tp2); el('tp2pct').textContent=fmtPct(L?sig.tp2D:-sig.tp2D);
@@ -1184,7 +1190,7 @@ function hmMiniSetTF(tf,btn){
 ════════════════════════════════════════ */
 let topSymbols=[];
 // Priority coins always shown first
-const priorityCoins = ['BTC','ETH','SOL','BNB','XRP','HYPE','AVAX','DOGE','LINK','ADA','MATIC','DOT','NEAR','SUI','WIF','BONK','PEPE','INJ','ARB','OP','TRX','LTC','ATOM'];
+const priorityCoins = ['BTC','ETH','SOL','BNB','XRP','HYPE','AVAX','BCH','DOGE','LINK','ADA','MATIC','DOT','NEAR','SUI','WIF','BONK','PEPE','INJ','ARB','OP','TRX','LTC','ATOM','FIL','SAND','MANA'];
 (async()=>{
   try{
     topSymbols=await fetchTop();
@@ -1196,17 +1202,19 @@ const priorityCoins = ['BTC','ETH','SOL','BNB','XRP','HYPE','AVAX','DOGE','LINK'
     const rest = topSymbols.filter(c=>!priorityCoins.includes(c.sym));
     topSymbols = [...priorityList, ...rest];
     // Add HYPE and AVAX manually if not found (they may have low volume ranking)
-    if(!topSymbols.find(c=>c.sym==='HYPE')){
-      try{
-        const hypePrice = await fetchPrice('HYPEUSDT');
-        topSymbols.unshift({sym:'HYPE',price:hypePrice,chg:0});
-      }catch(e){}
-    }
-    if(!topSymbols.find(c=>c.sym==='AVAX')){
-      try{
-        const avaxPrice = await fetchPrice('AVAXUSDT');
-        topSymbols.splice(1,0,{sym:'AVAX',price:avaxPrice,chg:0});
-      }catch(e){}
+    // Manually add coins that may not appear in top volume
+    const manualAdd = [
+      {sym:'HYPE', full:'HYPEUSDT'},
+      {sym:'AVAX', full:'AVAXUSDT'},
+      {sym:'BCH',  full:'BCHUSDT'},
+    ];
+    for(const coin of manualAdd){
+      if(!topSymbols.find(c=>c.sym===coin.sym)){
+        try{
+          const p = await fetchPrice(coin.full);
+          topSymbols.unshift({sym:coin.sym, price:p, chg:0});
+        }catch(e){}
+      }
     }
   }catch(e){}
 })();
