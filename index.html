@@ -560,35 +560,19 @@ const el = id => document.getElementById(id);
    API BINANCE (con proxies CORS)
 ════════════════════════════════════════ */
 async function apiFetch(url){
-  // Cache-buster: evita que un proxy devuelva la respuesta de OTRA moneda.
-  const cb = '_cb='+Math.random().toString(36).slice(2)+Date.now();
-  const u  = url + (url.includes('?')?'&':'?') + cb;
-  // SECUENCIAL (uno cada vez) — más predecible, no mezcla datos de proxies.
   // 1. Directo
-  try{ const r=await fetch(u,{mode:'cors',cache:'no-store'}); if(r.ok) return r.json(); }catch(e){}
+  try{ const r=await fetch(url,{mode:'cors'}); if(r.ok) return r.json(); }catch(e){}
   // 2. corsproxy.io  (formato nuevo ?url=)
-  try{ const r=await fetch('https://corsproxy.io/?url='+encodeURIComponent(u),{cache:'no-store'}); if(r.ok) return r.json(); }catch(e){}
-  // 3. allorigins /raw  (más rápido que /get)
-  try{ const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(u),{cache:'no-store'}); if(r.ok) return r.json(); }catch(e){}
-  // 4. proxy.cors.sh
-  try{ const r=await fetch('https://proxy.cors.sh/'+u,{cache:'no-store'}); if(r.ok) return r.json(); }catch(e){}
+  try{ const r=await fetch('https://corsproxy.io/?url='+encodeURIComponent(url)); if(r.ok) return r.json(); }catch(e){}
+  // 3. allorigins /raw
+  try{ const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url)); if(r.ok) return r.json(); }catch(e){}
+  // 4. allorigins /get (respaldo, formato envuelto)
+  try{ const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(url)); if(r.ok){const d=await r.json();return JSON.parse(d.contents);} }catch(e){}
   throw new Error('Sin conexión a Binance');
 }
-// Klines: intenta spot; si no hay (ej. HYPE solo en futuros), prueba futuros.
-const fetchKlines = (sym,tf,n) => apiFetch('https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit='+n)
-  .catch(()=>apiFetch('https://fapi.binance.com/fapi/v1/klines?symbol='+sym+'&interval='+tf+'&limit='+n));
-const fetchOB     = sym        => apiFetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=100')
-  .catch(()=>apiFetch('https://fapi.binance.com/fapi/v1/depth?symbol='+sym+'&limit=100'));
-// Precio: VERIFICA que el símbolo recibido sea el pedido (anti-mezcla de datos).
-const fetchPrice  = sym        => apiFetch('https://api.binance.com/api/v3/ticker/price?symbol='+sym)
-  .catch(()=>apiFetch('https://fapi.binance.com/fapi/v1/ticker/price?symbol='+sym))
-  .then(d=>{
-    if(d && d.symbol && d.symbol.toUpperCase()!==sym.toUpperCase())
-      throw new Error('Símbolo no coincide (proxy con caché)');
-    const p=parseFloat(d && d.price);
-    if(!(p>0)) throw new Error('Precio inválido');
-    return p;
-  });
+const fetchKlines = (sym,tf,n) => apiFetch('https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit='+n);
+const fetchOB     = sym        => apiFetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=100');
+const fetchPrice  = sym        => apiFetch('https://api.binance.com/api/v3/ticker/price?symbol='+sym).then(d=>parseFloat(d.price));
 const fetchTop    = ()         => apiFetch('https://api.binance.com/api/v3/ticker/24hr').then(data=>
   data.filter(t=>t.symbol.endsWith('USDT')&&!/(DOWN|UP|BEAR|BULL)/.test(t.symbol))
       .sort((a,b)=>parseFloat(b.quoteVolume)-parseFloat(a.quoteVolume))
@@ -641,15 +625,6 @@ function analyzeTF(candles, curPrice){
 ════════════════════════════════════════ */
 function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
   const c4=parseC(raw4h),c1=parseC(raw1h),c15=parseC(raw15m);
-  // ── ANTI-CACHÉ: las velas deben cuadrar con el precio real (±35%).
-  // Si un proxy devolvió velas de OTRA moneda, no coincidirán → abortar.
-  const lastClose = a => (a&&a.length)?a[a.length-1].cl:null;
-  const within = (a,b,t)=> a&&b && Math.abs(a-b)/b<=t;
-  if(curPrice>0){
-    const lc4=lastClose(c4),lc1=lastClose(c1),lc15=lastClose(c15);
-    if(!within(lc4,curPrice,0.35)||!within(lc1,curPrice,0.35)||!within(lc15,curPrice,0.35))
-      return {valid:false, reason:'Datos inconsistentes (proxy con caché) — pulsa Analizar otra vez', _stale:true};
-  }
   const tf4=analyzeTF(c4,curPrice),tf1=analyzeTF(c1,curPrice),tf15=analyzeTF(c15,curPrice);
   if(!tf4) return null;
 
@@ -1072,17 +1047,7 @@ async function doAnalyze(raw){
       fetchKlines(fullSym,'4h',210),fetchKlines(fullSym,'1h',210),
       fetchKlines(fullSym,'15m',210),fetchOB(fullSym),fetchPrice(fullSym)
     ]);
-    let sig=computeSignal(r4h,r1h,r15m,ob,price);
-    // Si llegaron datos cacheados de otra moneda → reintentar hasta 2 veces
-    let intento=0;
-    while(sig && sig._stale && intento<2){
-      intento++;
-      el('liveStatus').textContent='Verificando datos ('+intento+')...';
-      const[a,b,c]=await Promise.all([
-        fetchKlines(fullSym,'4h',210),fetchKlines(fullSym,'1h',210),fetchKlines(fullSym,'15m',210)
-      ]);
-      sig=computeSignal(a,b,c,ob,price);
-    }
+    const sig=computeSignal(r4h,r1h,r15m,ob,price);
     if(!sig) throw new Error('Datos insuficientes');
     if(!sig.valid){applyNoSignal(sym,sig.reason);}
     else{applySignal(sym,sig,price);}
