@@ -1281,6 +1281,13 @@ async function doAnalyze(raw){
   currentSymbol=fullSym;
   el('suggBox').classList.remove('open');
   el('coinInput').value=sym+'/USDT';
+  // Clear all stale data immediately
+  el('signalBanner').className='signal-banner sig-wait';
+  el('signalPair').textContent=sym+'/USDT · Cargando...';
+  el('signalDir').textContent='⏳';
+  el('signalMeta').textContent='Descargando datos de Binance...';
+  el('obRows').innerHTML='';
+  el('liqBands').innerHTML='';
   const btn=el('analyzeBtn');
   btn.textContent='Analizando 3 TF...';btn.disabled=true;
   el('liveStatus').textContent='Calculando...';
@@ -1292,14 +1299,27 @@ async function doAnalyze(raw){
   el('signalPair').textContent=sym+'/USDT · Analizando...';
 
   try{
+    // Add timeout to prevent hanging on failed fetches
+    const withTimeout = (promise, ms=12000) => Promise.race([
+      promise,
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error('Timeout — Binance tardó demasiado')),ms))
+    ]);
     const[r4h,r1h,r15m,ob,price]=await Promise.all([
-      fetchKlines(fullSym,'4h',210),fetchKlines(fullSym,'1h',210),
-      fetchKlines(fullSym,'15m',250),fetchOB(fullSym),fetchPrice(fullSym)
+      withTimeout(fetchKlines(fullSym,'4h',210)),
+      withTimeout(fetchKlines(fullSym,'1h',210)),
+      withTimeout(fetchKlines(fullSym,'15m',250)),
+      withTimeout(fetchOB(fullSym)),
+      withTimeout(fetchPrice(fullSym))
     ]);
     const sig=computeSignal(r4h,r1h,r15m,ob,price);
     if(!sig) throw new Error('Datos insuficientes');
-    if(!sig||!sig.valid){applyNoSignal(sym,sig?sig.reason:'Error en análisis');}
-    else{applySignal(sym,sig,price);}
+    if(!sig){
+      applyNoSignal(sym,'Error calculando señal');
+    } else if(!sig.valid){
+      applyNoSignal(sym,sig.reason||'Sin señal válida');
+    } else {
+      applySignal(sym,sig,price);
+    }
     renderOB(ob,price);
     buildLiq(price);
     liqHmSymbol=fullSym;hmMiniSymbol=fullSym;
