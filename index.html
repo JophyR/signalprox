@@ -570,13 +570,15 @@ if(!Promise.any){
   });
 }
 
-/* ── Proxies en PARALELO ──────────────────────────────
-   corsproxy.io  → da 403 en fapi (futuros), sirve para spot
-   allorigins    → spot Y futuros, a veces lento
-   proxy.cors.sh → spot Y futuros (sin rate-limit)
-   thingproxy    → spot Y futuros (fallback ligero)
-   Todos se lanzan a la vez; gana el primero que responda válido.
-──────────────────────────────────────────────────────*/
+/* ── PROXY: Cloudflare Worker propio + respaldos públicos ──
+   ⚙️ CONFIGURA AQUÍ tu Worker. Si lo dejas vacío ('') la app
+   usa solo los proxies públicos (frágiles). Con el Worker, los
+   futuros (HYPE, XAU…) y el 403 quedan resueltos de forma estable.
+
+   Ej: const WORKER = 'https://signalpro.TU-USUARIO.workers.dev';
+──────────────────────────────────────────────────────────*/
+const WORKER = ''; // ← PEGA AQUÍ la URL de tu Worker (sin barra final)
+
 const PROXY_TIMEOUT = 12000; // 12s por proxy
 
 // fetch con AbortController para no quedar colgado
@@ -587,25 +589,43 @@ function tFetch(url, opts){
     .finally(()=>clearTimeout(t));
 }
 
+// Convierte una URL de Binance en la ruta del Worker (/spot o /fut)
+function workerUrl(binanceUrl){
+  if(!WORKER) return null;
+  if(binanceUrl.includes('fapi.binance.com'))
+    return WORKER + '/fut' + binanceUrl.replace('https://fapi.binance.com','');
+  if(binanceUrl.includes('api.binance.com'))
+    return WORKER + '/spot' + binanceUrl.replace('https://api.binance.com','');
+  return null;
+}
+
 // Genera la lista de promesas-proxy para una URL Binance dada.
-// validate(data) debe devolver el dato bueno o lanzar/dar falsy si no sirve.
+// validate(data) debe devolver el dato bueno o falsy si no sirve.
 function proxyRace(url, validate){
   const cb = Math.random().toString(36).slice(2)+'_'+Date.now();
   const u  = url + (url.includes('?')?'&':'?')+'_cb='+cb;
   const ok = d => { const v = validate(d); if(v===false||v===undefined||v===null) throw new Error('inv'); return v; };
 
-  const tries = [
-    // directo (funciona si el navegador/red lo permite)
+  const tries = [];
+
+  // 1) Worker propio (PRIORITARIO si está configurado) — spot Y futuros
+  const w = workerUrl(u);
+  if(w) tries.push( tFetch(w).then(r=>{if(!r.ok)throw 0;return r.json();}).then(ok) );
+
+  // 2) Respaldos públicos (se lanzan a la vez; gana el primero válido)
+  tries.push(
+    // directo (si el navegador/red lo permite)
     tFetch(u,{mode:'cors'}).then(r=>{if(!r.ok)throw 0;return r.json();}).then(ok),
-    // corsproxy.io (solo útil en spot, pero lo intentamos igual)
-    tFetch('https://corsproxy.io/?'+encodeURIComponent(u)).then(r=>{if(!r.ok)throw 0;return r.json();}).then(ok),
+    // corsproxy.io — formato CORRECTO actual: ?url=
+    tFetch('https://corsproxy.io/?url='+encodeURIComponent(u)).then(r=>{if(!r.ok)throw 0;return r.json();}).then(ok),
     // allorigins (spot + futuros)
     tFetch('https://api.allorigins.win/raw?url='+encodeURIComponent(u)).then(r=>{if(!r.ok)throw 0;return r.json();}).then(ok),
     // proxy.cors.sh (spot + futuros)
     tFetch('https://proxy.cors.sh/'+u).then(r=>{if(!r.ok)throw 0;return r.json();}).then(ok),
     // thingproxy (spot + futuros)
-    tFetch('https://thingproxy.freeboard.io/fetch/'+u).then(r=>{if(!r.ok)throw 0;return r.json();}).then(ok),
-  ];
+    tFetch('https://thingproxy.freeboard.io/fetch/'+u).then(r=>{if(!r.ok)throw 0;return r.json();}).then(ok)
+  );
+
   return Promise.any(tries);
 }
 
