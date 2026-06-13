@@ -563,46 +563,59 @@ const el = id => document.getElementById(id);
    API BINANCE (con proxies CORS)
 ════════════════════════════════════════ */
 async function apiFetch(url){
-  // Add cache-busting to prevent stale proxy responses
-  const bust = '&_='+Date.now();
-  const urlB = url + (url.includes('?')?bust:bust.replace('&','?'));
-  // 1. Directo
-  try{ const r=await fetch(urlB,{mode:'cors',cache:'no-store'}); if(r.ok) return r.json(); }catch(e){}
-  // 2. corsproxy.io
-  try{ const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(urlB),{cache:'no-store'}); if(r.ok) return r.json(); }catch(e){}
-  // 3. allorigins
-  try{ const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(urlB),{cache:'no-store'}); if(r.ok){const d=await r.json();return JSON.parse(d.contents);} }catch(e){}
-  throw new Error('Sin conexión a Binance');
+  const cb = Math.random().toString(36).slice(2)+'_'+Date.now();
+  const urlB = url + (url.includes('?')?'&':'?')+'_cb='+cb;
+  
+  // Race multiple proxies simultaneously — use whichever responds first
+  const proxies = [
+    // Direct
+    fetch(urlB,{mode:'cors',cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()),
+    // corsproxy.io
+    fetch('https://corsproxy.io/?'+encodeURIComponent(urlB),{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()),
+    // allorigins
+    fetch('https://api.allorigins.win/get?url='+encodeURIComponent(urlB),{cache:'no-store'})
+      .then(r=>r.ok?r.json():Promise.reject())
+      .then(d=>JSON.parse(d.contents)),
+    // thingproxy
+    fetch('https://thingproxy.freeboard.io/fetch/'+urlB,{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()),
+  ];
+  
+  try{
+    // Use Promise.any to get first successful response
+    return await Promise.any(proxies);
+  }catch(e){
+    throw new Error('Sin conexión a Binance — todos los proxies fallaron');
+  }
 }
 async function fetchKlines(sym, tf, n){
   const sUrl='https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit='+n;
   const fUrl='https://fapi.binance.com/fapi/v1/klines?symbol='+sym+'&interval='+tf+'&limit='+n;
-  const _t=Date.now();
-  try{const r=await fetch(sUrl+'&_='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl+'&_='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
-  try{const r=await fetch(fUrl+'&_='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl+'&_='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
+  const _t=Math.random().toString(36).slice(2)+'_'+Date.now();
+  try{const r=await fetch(sUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>10&&Array.isArray(d[0]))return d;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
+  try{const r=await fetch(fUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
   try{const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();const p=JSON.parse(d.contents);if(p&&p.length>0)return p;}}catch(e){}
   throw new Error('Klines no disponibles para '+sym);
 }
 async function fetchOB(sym){
   const sUrl='https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=50';
   const fUrl='https://fapi.binance.com/fapi/v1/depth?symbol='+sym+'&limit=50';
-  const _t=Date.now();
-  try{const r=await fetch(sUrl+'&_='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl+'&_='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
-  try{const r=await fetch(fUrl+'&_='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl+'&_='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
+  const _t=Math.random().toString(36).slice(2)+'_'+Date.now();
+  try{const r=await fetch(sUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
+  try{const r=await fetch(fUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
   return {bids:[],asks:[]};
 }
 async function fetchPrice(sym){
   const sUrl='https://api.binance.com/api/v3/ticker/price?symbol='+sym;
   const fUrl='https://fapi.binance.com/fapi/v1/ticker/price?symbol='+sym;
-  const _t=Date.now();
-  try{const r=await fetch(sUrl+'&_='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl+'&_='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch(fUrl+'&_='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl+'&_='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
+  const _t=Math.random().toString(36).slice(2)+'_'+Date.now();
+  try{const r=await fetch(sUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
+  try{const r=await fetch(fUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
   try{const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();const p=parseFloat(JSON.parse(d.contents).price);if(p>0.00001)return p;}}catch(e){}
   throw new Error('Par no encontrado: '+sym);
 }
@@ -1252,13 +1265,24 @@ function onCoinInput(input){
   const val=input.value.toUpperCase().replace('/USDT','').trim();
   const sugg=el('suggBox');
   if(!val){sugg.classList.remove('open');return;}
-  const m=topSymbols.filter(c=>c.sym.startsWith(val)||c.sym.includes(val)).slice(0,6);
-  if(!m.length){sugg.classList.remove('open');return;}
-  sugg.innerHTML=m.map(c=>'<div class="sugg-item" onclick="doAnalyze(\''+c.sym+'\')">'
+  const m=topSymbols.filter(c=>c.sym.startsWith(val)||c.sym.includes(val)).slice(0,5);
+  // Always show typed symbol as direct option
+  const directMatch=m.find(c=>c.sym===val);
+  let html='';
+  if(!directMatch&&val.length>=2){
+    html='<div class="sugg-item" onclick="doAnalyze(\'' +val+ '\')" style="background:#f0f7e6;border-bottom:1px solid #e0e0e0;">'
+      +'<span><b>'+val+'</b>/USDT</span>'
+      +'<span style="font-size:10px;color:#3B6D11;">Analizar directamente ↵</span>'
+      +'</div>';
+  }
+  html+=m.map(c=>'<div class="sugg-item" onclick="doAnalyze(\'' +c.sym+ '\')">'
     +'<span><b>'+c.sym+'</b>/USDT</span>'
-    +'<span style="color:'+(c.chg>=0?'#3B6D11':'#A32D2D')+'">'+fmt(c.price)+' ('+(c.chg>=0?'+':'')+c.chg.toFixed(2)+'%)</span>'
+    +'<span style="color:'+(c.chg>=0?'#3B6D11':'#A32D2D')+';">'+fmt(c.price)+' ('+(c.chg>=0?'+':'')+c.chg.toFixed(2)+'%)</span>'
     +'</div>').join('');
+  if(!html){sugg.classList.remove('open');return;}
+  sugg.innerHTML=html;
   sugg.classList.add('open');
+}
 }
 
 /* ════════════════════════════════════════
@@ -1268,6 +1292,7 @@ async function doAnalyze(raw){
   const sym=raw.replace('/USDT','').trim().toUpperCase();
   const fullSym=sym+'USDT';
   currentSymbol=fullSym;
+  sessionStorage.setItem('lastCoin', sym);
   el('suggBox').classList.remove('open');
   el('coinInput').value=sym+'/USDT';
   // Clear all stale data immediately
@@ -1289,7 +1314,7 @@ async function doAnalyze(raw){
 
   try{
     // Add timeout to prevent hanging on failed fetches
-    const withTimeout = (promise, ms=20000) => Promise.race([
+    const withTimeout = (promise, ms=25000) => Promise.race([
       promise,
       new Promise((_,reject)=>setTimeout(()=>reject(new Error('Timeout — Binance tardó demasiado')),ms))
     ]);
@@ -1314,7 +1339,7 @@ async function doAnalyze(raw){
     liqHmSymbol=fullSym;hmMiniSymbol=fullSym;
     liqHmRefresh();hmMiniRefresh();
     clearInterval(refreshTimer);
-    refreshTimer=setInterval(()=>doAnalyze(sym),30000);
+    refreshTimer=setInterval(()=>doAnalyze(currentSymbol.replace('USDT','')),30000);
     el('liveStatus').textContent='● En vivo';
   }catch(e){
     el('liveStatus').textContent='✕ Error';
@@ -1380,7 +1405,9 @@ function setDomTF(tf,btn){
 ════════════════════════════════════════ */
 renderDom('24h');
 window.addEventListener('load',()=>{
-  setTimeout(()=>doAnalyze('BTC'),800);
+  // Remember last analyzed coin using sessionStorage
+  const lastCoin = sessionStorage.getItem('lastCoin') || 'BTC';
+  setTimeout(()=>doAnalyze(lastCoin),800);
   liqHmRefresh();
   hmMiniRefresh();
   setInterval(liqHmRefresh,20000);
