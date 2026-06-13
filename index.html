@@ -635,34 +635,28 @@ function parseC(raw){return raw.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],cl:+k[4
    ANÁLISIS POR TEMPORALIDAD
 ════════════════════════════════════════ */
 function analyzeTF(candles, curPrice){
-  if(candles.length<205) return null;
-  // Need at least 200 candles for EMA200 to be meaningful
-  if(candles.length<220){
-    // With limited data, only use EMA50 and RSI, skip EMA200
-    const cls=candles.map(c=>c.cl);
-    const e50=calcEMA(cls,50); const E50=e50[e50.length-1];
-    const rsiA=calcRSI(cls,14); const rsi=rsiA[rsiA.length-1];
-    const macdD=calcMACD(cls);
-    const mL=macdD.macd[macdD.macd.length-1],sL=macdD.signal[macdD.signal.length-1];
-    const hL=macdD.hist[macdD.hist.length-1],hP=macdD.hist[macdD.hist.length-2];
-    let score=0;
-    if(curPrice>E50) score+=2; else score-=2;
-    if(rsi<35) score+=2; else if(rsi>68) score-=2; else if(rsi<50) score+=0.3; else score-=0.3;
-    const macdBull=mL>sL&&hL>hP;
-    if(macdBull) score+=1.5; else if(mL<sL&&hL<hP) score-=1.5;
-    return{dir:score>=1.5?'LONG':score<=-1.5?'SHORT':'NEUTRAL',score,rsi,e50:E50,e200:null,macdBull};
-  }
+  if(candles.length<55) return null;
   const cls=candles.map(c=>c.cl);
-  const e50=calcEMA(cls,50),e200=calcEMA(cls,200);
+  const e50arr=calcEMA(cls,50);
+  const E50=e50arr[e50arr.length-1];
+  // EMA200: use if enough candles, otherwise use EMA100 as proxy
+  let E200=null;
+  if(cls.length>=200){
+    const e200arr=calcEMA(cls,200);
+    E200=e200arr[e200arr.length-1];
+  } else if(cls.length>=100){
+    const e100arr=calcEMA(cls,100);
+    E200=e100arr[e100arr.length-1];
+  } else {
+    E200=E50; // last resort fallback
+  }
   const rsiA=calcRSI(cls,14); const rsi=rsiA[rsiA.length-1];
   const macdD=calcMACD(cls);
   const mL=macdD.macd[macdD.macd.length-1],sL=macdD.signal[macdD.signal.length-1];
   const hL=macdD.hist[macdD.hist.length-1],hP=macdD.hist[macdD.hist.length-2];
-  const E50=e50[e50.length-1],E200=e200[e200.length-1];
   let score=0;
-  if(curPrice>E50) score+=2; else score-=2;
-  if(curPrice>E200) score+=2.5; else score-=2.5;
-  if(E50>E200) score+=1; else score-=1;
+  if(curPrice>E50)  score+=2;   else score-=2;
+  if(E200&&E200!==E50){ if(curPrice>E200) score+=2.5; else score-=2.5; if(E50>E200) score+=1; else score-=1; }
   if(rsi<35) score+=2.5; else if(rsi>68) score-=2.5; else if(rsi<50) score+=0.5; else score-=0.5;
   const macdBull=mL>sL&&hL>hP; const macdBear=mL<sL&&hL<hP;
   if(macdBull) score+=1.5; else if(macdBear) score-=1.5;
