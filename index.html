@@ -562,29 +562,31 @@ const el = id => document.getElementById(id);
 /* ════════════════════════════════════════
    API BINANCE (con proxies CORS)
 ════════════════════════════════════════ */
+// Promise.any polyfill for older browsers
+if(!Promise.any){
+  Promise.any = arr => new Promise((res,rej)=>{
+    let errs=[], done=0;
+    arr.forEach((p,i)=>Promise.resolve(p).then(res).catch(e=>{errs[i]=e;if(++done===arr.length)rej(new AggregateError(errs,'All promises rejected'));}));
+  });
+}
+
 async function apiFetch(url){
   const cb = Math.random().toString(36).slice(2)+'_'+Date.now();
   const urlB = url + (url.includes('?')?'&':'?')+'_cb='+cb;
   
-  // Race multiple proxies simultaneously — use whichever responds first
+  // Race multiple proxies simultaneously
   const proxies = [
-    // Direct
-    fetch(urlB,{mode:'cors',cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()),
-    // corsproxy.io
-    fetch('https://corsproxy.io/?'+encodeURIComponent(urlB),{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()),
-    // allorigins
+    fetch(urlB,{mode:'cors',cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json();}),
+    fetch('https://corsproxy.io/?'+encodeURIComponent(urlB),{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json();}),
     fetch('https://api.allorigins.win/get?url='+encodeURIComponent(urlB),{cache:'no-store'})
-      .then(r=>r.ok?r.json():Promise.reject())
+      .then(r=>{if(!r.ok)throw new Error();return r.json();})
       .then(d=>JSON.parse(d.contents)),
-    // thingproxy
-    fetch('https://thingproxy.freeboard.io/fetch/'+urlB,{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()),
   ];
   
   try{
-    // Use Promise.any to get first successful response
     return await Promise.any(proxies);
   }catch(e){
-    throw new Error('Sin conexión a Binance — todos los proxies fallaron');
+    throw new Error('Sin conexión a Binance');
   }
 }
 async function fetchKlines(sym, tf, n){
@@ -1283,18 +1285,27 @@ function onCoinInput(input){
   sugg.innerHTML=html;
   sugg.classList.add('open');
 }
-}
 
 /* ════════════════════════════════════════
    ANÁLISIS PRINCIPAL
 ════════════════════════════════════════ */
 async function doAnalyze(raw){
-  const sym=raw.replace('/USDT','').trim().toUpperCase();
+  // Clean input: remove USDT suffix in any format
+  let sym = raw.trim().toUpperCase()
+    .replace(/[/\s-]/g,'')   // remove /, space, dash
+    .replace(/USDT$/,'')       // remove USDT suffix
+    .replace(/USDC$/,'')       // remove USDC suffix
+    .replace(/BUSD$/,'');      // remove BUSD suffix
+  sym = sym.trim();
+  if(!sym||sym.length<2){
+    el('analysisText').textContent='Ingresa un símbolo válido (ej: BTC, ETH, SOL)';
+    return;
+  }
   const fullSym=sym+'USDT';
   currentSymbol=fullSym;
   sessionStorage.setItem('lastCoin', sym);
   el('suggBox').classList.remove('open');
-  el('coinInput').value=sym+'/USDT';
+  el('coinInput').value=sym+'/USDT';  // Always show clean format
   // Clear all stale data immediately
   el('signalBanner').className='signal-banner sig-wait';
   el('signalPair').textContent=sym+'/USDT · Cargando...';
@@ -1314,7 +1325,7 @@ async function doAnalyze(raw){
 
   try{
     // Add timeout to prevent hanging on failed fetches
-    const withTimeout = (promise, ms=25000) => Promise.race([
+    const withTimeout = (promise, ms=15000) => Promise.race([
       promise,
       new Promise((_,reject)=>setTimeout(()=>reject(new Error('Timeout — Binance tardó demasiado')),ms))
     ]);
@@ -1343,12 +1354,19 @@ async function doAnalyze(raw){
     el('liveStatus').textContent='● En vivo';
   }catch(e){
     el('liveStatus').textContent='✕ Error';
-    const errMsg = e.message.includes('404')||e.message.includes('Invalid')||e.message.includes('API')
-      ? sym+'/USDT no existe en Binance. Prueba con otro exchange o verifica el símbolo.'
-      : 'Error de conexión: '+e.message+'. Intenta de nuevo.';
+    // Check if it looks like a typo
+    const sorted = sym.split('').sort().join('');
+    const commonPairs = ['BTC','ETH','SOL','BNB','XRP','DOGE','ADA','AVAX','LINK','DOT'];
+    const possibleMatch = commonPairs.find(p=>p.split('').sort().join('')===sorted);
+    const typoHint = possibleMatch ? ' ¿Quisiste decir '+possibleMatch+'?' : '';
+    const errMsg = e.message.includes('Par no encontrado')||e.message.includes('Timeout')||e.message.includes('fallaron')
+      ? '❌ '+sym+'/USDT no encontrado en Binance.'+typoHint+' Verifica el símbolo e intenta de nuevo.'
+      : '⚠️ Error de conexión. Intenta de nuevo en unos segundos.';
     el('analysisText').textContent=errMsg;
+    el('analysisTags').innerHTML='<span class="tag tag-bear">Par no encontrado</span>';
     el('signalDir').textContent='— ERROR —';
     el('signalPair').textContent=sym+'/USDT · No encontrado';
+    el('signalBanner').className='signal-banner sig-wait';
     console.error(e);
   }
   btn.textContent='Analizar';btn.disabled=false;
