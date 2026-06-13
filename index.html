@@ -572,44 +572,33 @@ async function apiFetch(url){
   throw new Error('Sin conexión a Binance');
 }
 async function fetchKlines(sym, tf, n){
-  // Try spot first
-  try{
-    const d = await apiFetch('https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit='+n);
-    if(d && d.length > 0) return d;
-  }catch(e){}
-  // Try futures
-  try{
-    const d = await apiFetch('https://fapi.binance.com/fapi/v1/klines?symbol='+sym+'&interval='+tf+'&limit='+n);
-    if(d && d.length > 0) return d;
-  }catch(e){}
+  const sUrl='https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit='+n;
+  const fUrl='https://fapi.binance.com/fapi/v1/klines?symbol='+sym+'&interval='+tf+'&limit='+n;
+  try{const r=await fetch(sUrl,{mode:'cors'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl));if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
+  try{const r=await fetch(fUrl,{mode:'cors'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
+  try{const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();const p=JSON.parse(d.contents);if(p&&p.length>0)return p;}}catch(e){}
   throw new Error('Klines no disponibles para '+sym);
 }
 async function fetchOB(sym){
-  try{
-    const d = await apiFetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=100');
-    if(d && d.bids) return d;
-  }catch(e){}
-  // Try futures order book
-  try{
-    const d = await apiFetch('https://fapi.binance.com/fapi/v1/depth?symbol='+sym+'&limit=100');
-    if(d && d.bids) return d;
-  }catch(e){}
-  throw new Error('Order book no disponible para '+sym);
+  const sUrl='https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=50';
+  const fUrl='https://fapi.binance.com/fapi/v1/depth?symbol='+sym+'&limit=50';
+  try{const r=await fetch(sUrl,{mode:'cors'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl));if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
+  try{const r=await fetch(fUrl,{mode:'cors'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
+  return {bids:[],asks:[]};
 }
 async function fetchPrice(sym){
-  // Try spot first
-  try{
-    const d = await apiFetch('https://api.binance.com/api/v3/ticker/price?symbol='+sym);
-    const p = parseFloat(d.price);
-    if(p && p > 0.00001) return p;
-  }catch(e){}
-  // Try futures (perpetual) — for tokens like HYPE, not on spot
-  try{
-    const d = await apiFetch('https://fapi.binance.com/fapi/v1/ticker/price?symbol='+sym);
-    const p = parseFloat(d.price);
-    if(p && p > 0.00001) return p;
-  }catch(e){}
-  throw new Error('Par no encontrado en Binance spot ni futuros: '+sym);
+  const sUrl='https://api.binance.com/api/v3/ticker/price?symbol='+sym;
+  const fUrl='https://fapi.binance.com/fapi/v1/ticker/price?symbol='+sym;
+  try{const r=await fetch(sUrl,{mode:'cors'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl));if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
+  try{const r=await fetch(fUrl,{mode:'cors'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
+  try{const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();const p=parseFloat(JSON.parse(d.contents).price);if(p>0.00001)return p;}}catch(e){}
+  throw new Error('Par no encontrado: '+sym);
 }
 const fetchTop    = ()         => apiFetch('https://api.binance.com/api/v3/ticker/24hr').then(data=>
   data.filter(t=>t.symbol.endsWith('USDT')&&!/(DOWN|UP|BEAR|BULL)/.test(t.symbol))
@@ -1300,7 +1289,7 @@ async function doAnalyze(raw){
 
   try{
     // Add timeout to prevent hanging on failed fetches
-    const withTimeout = (promise, ms=12000) => Promise.race([
+    const withTimeout = (promise, ms=20000) => Promise.race([
       promise,
       new Promise((_,reject)=>setTimeout(()=>reject(new Error('Timeout — Binance tardó demasiado')),ms))
     ]);
