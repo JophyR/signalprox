@@ -818,9 +818,17 @@ function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
     }
     return{valid:false,reason:'Sin tendencia clara en 4H — esperar dirección'};
   }
-  if(tf1&&tf1.dir!=='NEUTRAL'&&tf1.dir!==tf4.dir) return{valid:false,reason:'1H contradice a 4H — sin confluencia'};
+  // Count aligned TFs
   const aligned=[tf4,tf1,tf15].filter(t=>t&&t.dir===tf4.dir).length;
-  if(aligned<2) return{valid:false,reason:'Solo 4H alineado — esperar confirmación en 1H o 15M'};
+  const h1Agrees  = tf1  && tf1.dir  === tf4.dir;
+  const m15Agrees = tf15 && tf15.dir === tf4.dir;
+  // Need: 4H + 1H aligned (regardless of 15M)
+  // OR: 4H + 15M aligned (if 1H is neutral)
+  if(!h1Agrees && !m15Agrees){
+    if(tf1&&tf1.dir!=='NEUTRAL'&&tf1.dir!==tf4.dir)
+      return{valid:false,reason:'1H contradice a 4H — sin confluencia'};
+    return{valid:false,reason:'Solo 4H alineado — esperar confirmación en 1H o 15M'};
+  }
 
   const isLong=tf4.dir==='LONG';
   const cls4=c4.map(c=>c.cl);
