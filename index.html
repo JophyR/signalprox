@@ -723,6 +723,20 @@ function analyzeTF(candles, curPrice){
 ════════════════════════════════════════ */
 function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
   const c4=parseC(raw4h),c1=parseC(raw1h),c15=parseC(raw15m);
+  // ── ANTI-CACHÉ: verifica que las velas correspondan al par real ──
+  // Algunos proxies CORS devuelven datos cacheados de OTRA moneda.
+  // El último cierre de cada TF debe parecerse al precio actual (±35%).
+  // Si no cuadra → datos corruptos → abortamos para no dar señal falsa.
+  const lastClose = arr => (arr && arr.length) ? arr[arr.length-1].cl : null;
+  const within = (a,b,tol) => a&&b && Math.abs(a-b)/b <= tol;
+  const okPrice = p => p>0;
+  if(okPrice(curPrice)){
+    const tol=0.35; // 35% de margen (cubre velas 15m vs precio spot)
+    const lc4=lastClose(c4), lc1=lastClose(c1), lc15=lastClose(c15);
+    if(!within(lc4,curPrice,tol) || !within(lc1,curPrice,tol) || !within(lc15,curPrice,tol)){
+      return {valid:false, reason:'Datos inconsistentes (proxy con caché) — reintenta', _stale:true};
+    }
+  }
   const tf4=analyzeTF(c4,curPrice),tf1=analyzeTF(c1,curPrice),tf15=analyzeTF(c15,curPrice);
   if(!tf4) return null;
 
@@ -1384,7 +1398,17 @@ async function doAnalyze(raw){
       withTimeout(fetchOB(fullSym)),
       withTimeout(fetchPrice(fullSym))
     ]);
-    const sig=computeSignal(r4h,r1h,r15m,ob,price);
+    let sig=computeSignal(r4h,r1h,r15m,ob,price);
+    // Si el proxy sirvió datos cacheados de otra moneda → reintentar 1 vez
+    if(sig && sig._stale){
+      el('signalPair').textContent=sym+'/USDT · Reintentando (datos en caché)...';
+      const[r4h2,r1h2,r15m2]=await Promise.all([
+        withTimeout(fetchKlines(fullSym,'4h',210)),
+        withTimeout(fetchKlines(fullSym,'1h',210)),
+        withTimeout(fetchKlines(fullSym,'15m',250))
+      ]);
+      sig=computeSignal(r4h2,r1h2,r15m2,ob,price);
+    }
     if(!sig) throw new Error('Datos insuficientes');
     if(!sig){
       applyNoSignal(sym,'Error calculando señal');
