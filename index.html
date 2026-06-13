@@ -571,13 +571,46 @@ async function apiFetch(url){
   try{ const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(url)); if(r.ok){const d=await r.json();return JSON.parse(d.contents);} }catch(e){}
   throw new Error('Sin conexión a Binance');
 }
-const fetchKlines = (sym,tf,n) => apiFetch('https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit='+n);
-const fetchOB     = sym        => apiFetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=100');
-const fetchPrice  = sym => apiFetch('https://api.binance.com/api/v3/ticker/price?symbol='+sym).then(d=>{
-  const p = parseFloat(d.price);
-  if(!p || isNaN(p) || p <= 0 || p < 0.00001) throw new Error('Invalid price for '+sym+': '+p);
-  return p;
-});
+async function fetchKlines(sym, tf, n){
+  // Try spot first
+  try{
+    const d = await apiFetch('https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit='+n);
+    if(d && d.length > 0) return d;
+  }catch(e){}
+  // Try futures
+  try{
+    const d = await apiFetch('https://fapi.binance.com/fapi/v1/klines?symbol='+sym+'&interval='+tf+'&limit='+n);
+    if(d && d.length > 0) return d;
+  }catch(e){}
+  throw new Error('Klines no disponibles para '+sym);
+}
+async function fetchOB(sym){
+  try{
+    const d = await apiFetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=100');
+    if(d && d.bids) return d;
+  }catch(e){}
+  // Try futures order book
+  try{
+    const d = await apiFetch('https://fapi.binance.com/fapi/v1/depth?symbol='+sym+'&limit=100');
+    if(d && d.bids) return d;
+  }catch(e){}
+  throw new Error('Order book no disponible para '+sym);
+}
+async function fetchPrice(sym){
+  // Try spot first
+  try{
+    const d = await apiFetch('https://api.binance.com/api/v3/ticker/price?symbol='+sym);
+    const p = parseFloat(d.price);
+    if(p && p > 0.00001) return p;
+  }catch(e){}
+  // Try futures (perpetual) — for tokens like HYPE, not on spot
+  try{
+    const d = await apiFetch('https://fapi.binance.com/fapi/v1/ticker/price?symbol='+sym);
+    const p = parseFloat(d.price);
+    if(p && p > 0.00001) return p;
+  }catch(e){}
+  throw new Error('Par no encontrado en Binance spot ni futuros: '+sym);
+}
 const fetchTop    = ()         => apiFetch('https://api.binance.com/api/v3/ticker/24hr').then(data=>
   data.filter(t=>t.symbol.endsWith('USDT')&&!/(DOWN|UP|BEAR|BULL)/.test(t.symbol))
       .sort((a,b)=>parseFloat(b.quoteVolume)-parseFloat(a.quoteVolume))
@@ -1204,7 +1237,7 @@ const priorityCoins = ['BTC','ETH','SOL','BNB','XRP','HYPE','AVAX','BCH','RENDER
     // Add HYPE and AVAX manually if not found (they may have low volume ranking)
     // Manually add coins that may not appear in top volume
     const manualAdd = [
-      {sym:'HYPE',   full:'HYPEUSDT'},
+      {sym:'HYPE',   full:'HYPEUSDT'},  // Available on Binance futures
       {sym:'AVAX',   full:'AVAXUSDT'},
       {sym:'BCH',    full:'BCHUSDT'},
       {sym:'RENDER', full:'RENDERUSDT'},
@@ -1276,7 +1309,12 @@ async function doAnalyze(raw){
     el('liveStatus').textContent='● En vivo';
   }catch(e){
     el('liveStatus').textContent='✕ Error';
-    el('analysisText').textContent='Error: '+e.message+'. Verifica el par o la conexión.';
+    const errMsg = e.message.includes('404')||e.message.includes('Invalid')||e.message.includes('API')
+      ? sym+'/USDT no existe en Binance. Prueba con otro exchange o verifica el símbolo.'
+      : 'Error de conexión: '+e.message+'. Intenta de nuevo.';
+    el('analysisText').textContent=errMsg;
+    el('signalDir').textContent='— ERROR —';
+    el('signalPair').textContent=sym+'/USDT · No encontrado';
     console.error(e);
   }
   btn.textContent='Analizar';btn.disabled=false;
