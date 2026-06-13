@@ -672,7 +672,7 @@ function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
   if(!tf4) return null;
 
   // ── DETECCIÓN DE REBOTE ALCISTA (LONG contra tendencia bajista) ──
-  if(tf4.dir==='SHORT'){
+  if(tf4.dir==='SHORT' || (tf4.dir==='NEUTRAL' && tf4.score < 0)){
     const rsi1h   = tf1  ? tf1.rsi  : 50;
     const rsi15m  = tf15 ? tf15.rsi : 50;
     const macd1h  = tf1  ? tf1.macdBull  : false;
