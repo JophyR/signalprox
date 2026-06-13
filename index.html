@@ -570,56 +570,76 @@ if(!Promise.any){
   });
 }
 
-async function apiFetch(url){
+/* ── Proxies en PARALELO ──────────────────────────────
+   corsproxy.io  → da 403 en fapi (futuros), sirve para spot
+   allorigins    → spot Y futuros, a veces lento
+   proxy.cors.sh → spot Y futuros (sin rate-limit)
+   thingproxy    → spot Y futuros (fallback ligero)
+   Todos se lanzan a la vez; gana el primero que responda válido.
+──────────────────────────────────────────────────────*/
+const PROXY_TIMEOUT = 12000; // 12s por proxy
+
+// fetch con AbortController para no quedar colgado
+function tFetch(url, opts){
+  const c = new AbortController();
+  const t = setTimeout(()=>c.abort(), PROXY_TIMEOUT);
+  return fetch(url, Object.assign({signal:c.signal, cache:'no-store'}, opts||{}))
+    .finally(()=>clearTimeout(t));
+}
+
+// Genera la lista de promesas-proxy para una URL Binance dada.
+// validate(data) debe devolver el dato bueno o lanzar/dar falsy si no sirve.
+function proxyRace(url, validate){
   const cb = Math.random().toString(36).slice(2)+'_'+Date.now();
-  const urlB = url + (url.includes('?')?'&':'?')+'_cb='+cb;
-  
-  // Race multiple proxies simultaneously
-  const proxies = [
-    fetch(urlB,{mode:'cors',cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json();}),
-    fetch('https://corsproxy.io/?'+encodeURIComponent(urlB),{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json();}),
-    fetch('https://api.allorigins.win/get?url='+encodeURIComponent(urlB),{cache:'no-store'})
-      .then(r=>{if(!r.ok)throw new Error();return r.json();})
-      .then(d=>JSON.parse(d.contents)),
+  const u  = url + (url.includes('?')?'&':'?')+'_cb='+cb;
+  const ok = d => { const v = validate(d); if(v===false||v===undefined||v===null) throw new Error('inv'); return v; };
+
+  const tries = [
+    // directo (funciona si el navegador/red lo permite)
+    tFetch(u,{mode:'cors'}).then(r=>{if(!r.ok)throw 0;return r.json();}).then(ok),
+    // corsproxy.io (solo útil en spot, pero lo intentamos igual)
+    tFetch('https://corsproxy.io/?'+encodeURIComponent(u)).then(r=>{if(!r.ok)throw 0;return r.json();}).then(ok),
+    // allorigins (spot + futuros)
+    tFetch('https://api.allorigins.win/raw?url='+encodeURIComponent(u)).then(r=>{if(!r.ok)throw 0;return r.json();}).then(ok),
+    // proxy.cors.sh (spot + futuros)
+    tFetch('https://proxy.cors.sh/'+u).then(r=>{if(!r.ok)throw 0;return r.json();}).then(ok),
+    // thingproxy (spot + futuros)
+    tFetch('https://thingproxy.freeboard.io/fetch/'+u).then(r=>{if(!r.ok)throw 0;return r.json();}).then(ok),
   ];
-  
+  return Promise.any(tries);
+}
+
+async function apiFetch(url){
   try{
-    return await Promise.any(proxies);
+    return await proxyRace(url, d=>d);
   }catch(e){
     throw new Error('Sin conexión a Binance');
   }
 }
+
 async function fetchKlines(sym, tf, n){
   const sUrl='https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit='+n;
   const fUrl='https://fapi.binance.com/fapi/v1/klines?symbol='+sym+'&interval='+tf+'&limit='+n;
-  const _t=Math.random().toString(36).slice(2)+'_'+Date.now();
-  try{const r=await fetch(sUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>10&&Array.isArray(d[0]))return d;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
-  try{const r=await fetch(fUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
-  try{const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();const p=JSON.parse(d.contents);if(p&&p.length>0)return p;}}catch(e){}
-  throw new Error('Klines no disponibles para '+sym);
+  const valid = d => (Array.isArray(d) && d.length>0 && Array.isArray(d[0])) ? d : false;
+  // Spot y futuros corren a la vez; el primero válido gana.
+  try{ return await Promise.any([ proxyRace(sUrl,valid), proxyRace(fUrl,valid) ]); }
+  catch(e){ throw new Error('Klines no disponibles para '+sym); }
 }
+
 async function fetchOB(sym){
   const sUrl='https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=50';
   const fUrl='https://fapi.binance.com/fapi/v1/depth?symbol='+sym+'&limit=50';
-  const _t=Math.random().toString(36).slice(2)+'_'+Date.now();
-  try{const r=await fetch(sUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
-  try{const r=await fetch(fUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
-  return {bids:[],asks:[]};
+  const valid = d => (d && Array.isArray(d.bids) && d.bids.length>0) ? d : false;
+  try{ return await Promise.any([ proxyRace(sUrl,valid), proxyRace(fUrl,valid) ]); }
+  catch(e){ return {bids:[],asks:[]}; }
 }
+
 async function fetchPrice(sym){
   const sUrl='https://api.binance.com/api/v3/ticker/price?symbol='+sym;
   const fUrl='https://fapi.binance.com/fapi/v1/ticker/price?symbol='+sym;
-  const _t=Math.random().toString(36).slice(2)+'_'+Date.now();
-  try{const r=await fetch(sUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(sUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch(fUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(fUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();const p=parseFloat(JSON.parse(d.contents).price);if(p>0.00001)return p;}}catch(e){}
-  throw new Error('Par no encontrado: '+sym);
+  const valid = d => { const p=parseFloat(d&&d.price); return (p>0.00001)?p:false; };
+  try{ return await Promise.any([ proxyRace(sUrl,valid), proxyRace(fUrl,valid) ]); }
+  catch(e){ throw new Error('Par no encontrado: '+sym); }
 }
 const fetchTop    = ()         => apiFetch('https://api.binance.com/api/v3/ticker/24hr').then(data=>
   data.filter(t=>t.symbol.endsWith('USDT')&&!/(DOWN|UP|BEAR|BULL)/.test(t.symbol))
