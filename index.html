@@ -575,7 +575,7 @@ const fetchKlines = (sym,tf,n) => apiFetch('https://api.binance.com/api/v3/kline
 const fetchOB     = sym        => apiFetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=100');
 const fetchPrice  = sym => apiFetch('https://api.binance.com/api/v3/ticker/price?symbol='+sym).then(d=>{
   const p = parseFloat(d.price);
-  if(!p || p <= 0 || p < 0.000001) throw new Error('Invalid price: '+p);
+  if(!p || isNaN(p) || p <= 0 || p < 0.00001) throw new Error('Invalid price for '+sym+': '+p);
   return p;
 });
 const fetchTop    = ()         => apiFetch('https://api.binance.com/api/v3/ticker/24hr').then(data=>
@@ -1190,7 +1190,7 @@ function hmMiniSetTF(tf,btn){
 ════════════════════════════════════════ */
 let topSymbols=[];
 // Priority coins always shown first
-const priorityCoins = ['BTC','ETH','SOL','BNB','XRP','HYPE','AVAX','BCH','DOGE','LINK','ADA','MATIC','DOT','NEAR','SUI','WIF','BONK','PEPE','INJ','ARB','OP','TRX','LTC','ATOM','FIL','SAND','MANA'];
+const priorityCoins = ['BTC','ETH','SOL','BNB','XRP','HYPE','AVAX','BCH','RENDER','RAY','ENA','DOGE','LINK','ADA','DOT','NEAR','SUI','WIF','BONK','PEPE','INJ','ARB','OP','TRX','LTC','ATOM','TAO','JUP','PYTH','SEI','TIA'];
 (async()=>{
   try{
     topSymbols=await fetchTop();
@@ -1204,15 +1204,23 @@ const priorityCoins = ['BTC','ETH','SOL','BNB','XRP','HYPE','AVAX','BCH','DOGE',
     // Add HYPE and AVAX manually if not found (they may have low volume ranking)
     // Manually add coins that may not appear in top volume
     const manualAdd = [
-      {sym:'HYPE', full:'HYPEUSDT'},
-      {sym:'AVAX', full:'AVAXUSDT'},
-      {sym:'BCH',  full:'BCHUSDT'},
+      {sym:'HYPE',   full:'HYPEUSDT'},
+      {sym:'AVAX',   full:'AVAXUSDT'},
+      {sym:'BCH',    full:'BCHUSDT'},
+      {sym:'RENDER', full:'RENDERUSDT'},
+      {sym:'RAY',    full:'RAYUSDT'},
+      {sym:'ENA',    full:'ENAUSDT'},
+      {sym:'TAO',    full:'TAOUSDT'},
+      {sym:'JUP',    full:'JUPUSDT'},
+      {sym:'PYTH',   full:'PYTHUSDT'},
+      {sym:'SEI',    full:'SEIUSDT'},
+      {sym:'TIA',    full:'TIAUSDT'},
     ];
     for(const coin of manualAdd){
       if(!topSymbols.find(c=>c.sym===coin.sym)){
         try{
           const p = await fetchPrice(coin.full);
-          topSymbols.unshift({sym:coin.sym, price:p, chg:0});
+          if(p>0) topSymbols.splice(5,0,{sym:coin.sym, price:p, chg:0});
         }catch(e){}
       }
     }
@@ -1243,6 +1251,12 @@ async function doAnalyze(raw){
   const btn=el('analyzeBtn');
   btn.textContent='Analizando 3 TF...';btn.disabled=true;
   el('liveStatus').textContent='Calculando...';
+  // Reset all price fields while loading
+  ['entryVal','tp1val','tp2val','tp3val','slval','levVal','rsiVal','macdVal','emaVal','atrVal'].forEach(id=>{
+    const e=el(id); if(e) e.textContent='...';
+  });
+  el('signalDir').textContent='Cargando...';
+  el('signalPair').textContent=sym+'/USDT · Analizando...';
 
   try{
     const[r4h,r1h,r15m,ob,price]=await Promise.all([
