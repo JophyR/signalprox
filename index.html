@@ -646,21 +646,42 @@ function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
   if(!tf4) return null;
 
   // ── DETECCIÓN DE REBOTE ALCISTA (LONG contra tendencia bajista) ──
-  // Condiciones: 4H bajista + RSI sobreventa en 1H o 15M + MACD cruce alcista en menor TF
   if(tf4.dir==='SHORT'){
     const rsi1h   = tf1  ? tf1.rsi  : 50;
     const rsi15m  = tf15 ? tf15.rsi : 50;
     const macd1h  = tf1  ? tf1.macdBull  : false;
     const macd15m = tf15 ? tf15.macdBull : false;
-    const rsiOversold = rsi1h < 35 || rsi15m < 32;
-    const macdBounce  = macd1h || macd15m;
-    // Soporte real del OB
+
+    // Condición 1: RSI sobreventa — más sensible
+    // RSI < 40 en 1H o RSI < 38 en 15M (captura más rebotes)
+    const rsiOversold = rsi1h < 40 || rsi15m < 38;
+
+    // Condición 2: MACD cruce alcista en 1H o 15M
+    const macdBounce = macd1h || macd15m;
+
+    // Condición 3: Soporte real del OB (bid wall cercano)
     const bids = ob.bids.map(([p,q])=>({p:+p,q:+q})).sort((a,b)=>b.q-a.q);
     const topBid = bids[0]||{p:curPrice*0.998,q:0};
-    const nearBidWall = topBid.p < curPrice && (curPrice-topBid.p)/curPrice < 0.005;
-    // Score de rebote: necesita al menos 2 de 3 condiciones
-    const bounceScore = (rsiOversold?1:0) + (macdBounce?1:0) + (nearBidWall?1:0);
-    if(bounceScore >= 2){
+    const nearBidWall = topBid.p < curPrice && (curPrice-topBid.p)/curPrice < 0.008;
+
+    // Condición 4 (nueva): Vela alcista reciente en 1H — precio subiendo desde mínimo
+    const lastC1 = c1[c1.length-1];
+    const prev2C1 = c1[c1.length-3];
+    const recentBullish = lastC1 && prev2C1 && lastC1.cl > lastC1.o && lastC1.cl > prev2C1.cl;
+
+    // Condición 5 (nueva): Soporte pivot cercano por debajo
+    const rec50=c4.slice(-50);
+    const pivL50=[];
+    for(let i=2;i<rec50.length-2;i++) if(rec50[i].l<rec50[i-1].l&&rec50[i].l<rec50[i+1].l) pivL50.push(rec50[i].l);
+    const nearPivotSup = pivL50.filter(p=>p<curPrice&&(curPrice-p)/curPrice<0.015).length > 0;
+
+    // Score: necesita 2 de 5 condiciones, pero RSI es obligatorio si está muy bajo
+    const bounceScore = (rsiOversold?1:0) + (macdBounce?1:0) + (nearBidWall?1:0) + (recentBullish?1:0) + (nearPivotSup?1:0);
+    // Si RSI muy extremo (<35 en 1H o <33 en 15M), solo necesita 1 condición extra
+    const rsiExtreme = rsi1h < 35 || rsi15m < 33;
+    const threshold = rsiExtreme ? 2 : 3;
+
+    if(bounceScore >= threshold){
       // Calcular entrada, SL y TPs para el rebote
       const cls4=c4.map(c=>c.cl);
       const atr=calcATR(c4,14);
@@ -692,12 +713,12 @@ function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
         valid:true, isLong:true, isBounce:true,
         entry,tp1,tp2,tp3,sl,slDist,tp1D,tp2D,tp3D,
         lev,levLbl,confPct,aligned:bounceScore,
-        strLabel:'Rebote alcista ('+bounceScore+'/3 condiciones)',
+        strLabel:'Rebote alcista ('+bounceScore+'/5 condiciones)',
         rsi:rsi1h<rsi15m?rsi1h:rsi15m,
         atrPct,e50,e200,macdBull:macdBounce,obPct,nearSup,nearRes,
         tf4dir:'SHORT',tf1dir:tf1?tf1.dir:'N/D',tf15dir:tf15?tf15.dir:'N/D',
         tf4sc:tf4.score.toFixed(1),tf1sc:tf1?tf1.score.toFixed(1):'—',tf15sc:tf15?tf15.score.toFixed(1):'—',
-        bounceConditions:{rsiOversold,macdBounce,nearBidWall}
+        bounceConditions:{rsiOversold,macdBounce,nearBidWall,recentBullish,nearPivotSup}
       };
     }
   }
@@ -815,11 +836,11 @@ function applySignal(sym,sig,curPrice){
   el('confNum').textContent=sig.confPct+'%'; el('confNum').style.color=cc;
   if(sig.isBounce){
     const bc=sig.bounceConditions;
-    el('c1v').textContent='RSI '+sig.rsi.toFixed(1)+' (sobreventa)'; el('c1d').style.background=dc['g'];
-    el('c2v').textContent=sig.macdBull?'Cruce alcista':'Sin cruce'; el('c2d').style.background=dc[sig.macdBull?'g':'r'];
-    el('c3v').textContent=bc.nearBidWall?'Muro comprador cerca':'Sin muro cercano'; el('c3d').style.background=dc[bc.nearBidWall?'g':'y'];
-    el('c4v').textContent='4H SHORT (macro bajista)'; el('c4d').style.background=dc['r'];
-    el('c5v').textContent=sig.confPct+'% rebote'; el('c5d').style.background=dc['y'];
+    el('c1v').textContent='RSI '+sig.rsi.toFixed(1)+(sig.rsi<35?' extremo':' sobreventa'); el('c1d').style.background=dc[sig.rsi<35?'g':'y'];
+    el('c2v').textContent=sig.macdBull?'Cruce alcista 1H/15M':'Sin cruce aún'; el('c2d').style.background=dc[sig.macdBull?'g':'y'];
+    el('c3v').textContent=bc.nearBidWall?'Muro comprador':bc.nearPivotSup?'Soporte pivot':'Sin soporte OB'; el('c3d').style.background=dc[bc.nearBidWall||bc.nearPivotSup?'g':'y'];
+    el('c4v').textContent=bc.recentBullish?'Vela alcista reciente':'Sin vela alcista'; el('c4d').style.background=dc[bc.recentBullish?'g':'y'];
+    el('c5v').textContent='4H SHORT — riesgo alto'; el('c5d').style.background=dc['r'];
   } else {
     el('c1v').textContent=fmt(sig.e200); el('c1d').style.background=dc[curPrice>sig.e200?'g':'r'];
     el('c2v').textContent=fmt(curPrice>sig.e50?sig.e50:sig.e200); el('c2d').style.background=dc['g'];
