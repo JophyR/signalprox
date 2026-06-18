@@ -716,13 +716,21 @@ function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
     for(let i=2;i<rec50.length-2;i++) if(rec50[i].l<rec50[i-1].l&&rec50[i].l<rec50[i+1].l) pivL50.push(rec50[i].l);
     const nearPivotSup = pivL50.filter(p=>p<curPrice&&(curPrice-p)/curPrice<0.015).length > 0;
 
-    // Score: necesita 2 de 5 condiciones, pero RSI es obligatorio si está muy bajo
-    const bounceScore = (rsiOversold?1:0) + (macdBounce?1:0) + (nearBidWall?1:0) + (recentBullish?1:0) + (nearPivotSup?1:0);
-    // Si RSI muy extremo (<35 en 1H o <33 en 15M), solo necesita 1 condición extra
-    const rsiExtreme = rsi1h < 35 || rsi15m < 33;
-    const threshold = rsiExtreme ? 2 : 3;
+    // ── CONFIRMACIÓN DE GIRO (obligatoria) ──────────────────────────
+    // El rebote NO entra hasta que el precio YA empezó a subir.
+    // Exige: en 15M, la última vela cierra alcista (cl>open) Y por encima
+    // del cierre de la vela anterior. Así evitamos entrar "en negativo"
+    // antes de que el giro exista (causa principal de los SL en rebotes).
+    const l15  = c15[c15.length-1];
+    const p15  = c15[c15.length-2];
+    const giroConfirmado = l15 && p15 && l15.cl > l15.o && l15.cl > p15.cl;
 
-    if(bounceScore >= threshold){
+    // Score: REBOTE ESTRICTO — necesita 4 de 5 condiciones.
+    const bounceScore = (rsiOversold?1:0) + (macdBounce?1:0) + (nearBidWall?1:0) + (recentBullish?1:0) + (nearPivotSup?1:0);
+    const threshold = 4; // fijo en 4/5 (sin atajos por RSI extremo)
+
+    // Sólo genera rebote si: 4/5 condiciones Y el giro está confirmado.
+    if(bounceScore >= threshold && giroConfirmado){
       // Calcular entrada, SL y TPs para el rebote
       const cls4=c4.map(c=>c.cl);
       const atr=calcATR(c4,14);
