@@ -681,10 +681,64 @@ function analyzeTF(candles, curPrice){
 /* ════════════════════════════════════════
    MOTOR DE SEÑAL PRINCIPAL
 ════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════
+   FILTRO ANTI-RANGO LATERAL  (CAPA ADICIONAL — no toca el motor)
+   Detecta si el activo está atrapado en un rango estrecho sin
+   tendencia. Si lo está, la app dice "ESPERAR" en vez de operar.
+   Devuelve: {enRango:true/false, techo, suelo, anchoPct}
+════════════════════════════════════════════════════════ */
+function detectarRango(c1h, c4h){
+  // Usamos las últimas 40 velas de 1H para medir el rango reciente.
+  const N = 40;
+  if(!c1h || c1h.length < N) return {enRango:false};
+  const tramo = c1h.slice(-N);
+  let techo = -Infinity, suelo = Infinity;
+  for(const v of tramo){ if(v.h>techo) techo=v.h; if(v.l<suelo) suelo=v.l; }
+  const medio = (techo+suelo)/2;
+  const anchoPct = (techo-suelo)/medio*100; // ancho del rango en %
+
+  // Criterio 1: rango ESTRECHO. Si el precio se ha movido menos de
+  // ~4% entre techo y suelo en 40 velas, está comprimido (lateral).
+  const rangoEstrecho = anchoPct < 4.0;
+
+  // Criterio 2: EMAs PLANAS Y PEGADAS (en tendencia se separan).
+  // Medimos la separación EMA50 vs EMA200 del 4H como % del precio.
+  let emasPegadas = false;
+  if(c4h && c4h.length >= 55){
+    const closes4 = c4h.map(x=>x.cl);
+    const arr50 = calcEMA(closes4, 50);
+    const arr200 = calcEMA(closes4, Math.min(200, closes4.length-1));
+    const e50 = arr50[arr50.length-1];
+    const e200 = arr200[arr200.length-1];
+    if(e50 && e200){
+      const sep = Math.abs(e50-e200)/((e50+e200)/2)*100;
+      emasPegadas = sep < 1.2; // separación menor al 1.2% = planas
+    }
+  }
+
+  // Está en rango si el precio está comprimido Y las EMAs planas.
+  const enRango = rangoEstrecho && emasPegadas;
+  return {enRango, techo, suelo, anchoPct};
+}
+
 function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
   const c4=parseC(raw4h),c1=parseC(raw1h),c15=parseC(raw15m);
   const tf4=analyzeTF(c4,curPrice),tf1=analyzeTF(c1,curPrice),tf15=analyzeTF(c15,curPrice);
   if(!tf4) return null;
+
+  // ── FILTRO ANTI-RANGO (portero, antes del motor) ──────────────
+  // Si el mercado está lateral, no operamos. El motor de LONG/SHORT
+  // de abajo NO se toca: simplemente no llegamos a él en este caso.
+  const rango = detectarRango(c1, c4);
+  if(rango.enRango){
+    return {
+      valid:false,
+      enRango:true,
+      reason:'Mercado en rango lateral ('+rango.anchoPct.toFixed(1)+'% de ancho) — esperar ruptura',
+      techo:rango.techo,
+      suelo:rango.suelo
+    };
+  }
 
   // ── DETECCIÓN DE REBOTE ALCISTA (LONG contra tendencia bajista) ──
   if(tf4.dir==='SHORT' || (tf4.dir==='NEUTRAL' && tf4.score < 0)){
