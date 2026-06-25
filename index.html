@@ -698,8 +698,9 @@ function detectarRango(c1h, c4h){
   const anchoPct = (techo-suelo)/medio*100; // ancho del rango en %
 
   // Criterio 1: rango ESTRECHO. Si el precio se ha movido menos de
-  // ~4% entre techo y suelo en 40 velas, está comprimido (lateral).
-  const rangoEstrecho = anchoPct < 4.0;
+  // ~6.5% entre techo y suelo en 40 velas, está comprimido (lateral).
+  // (Ajustado de 4% a 6.5% tras el caso ENA, que era lateral a ~7%.)
+  const rangoEstrecho = anchoPct < 6.5;
 
   // Criterio 2: EMAs PLANAS Y PEGADAS (en tendencia se separan).
   // Medimos la separación EMA50 vs EMA200 del 4H como % del precio.
@@ -712,7 +713,7 @@ function detectarRango(c1h, c4h){
     const e200 = arr200[arr200.length-1];
     if(e50 && e200){
       const sep = Math.abs(e50-e200)/((e50+e200)/2)*100;
-      emasPegadas = sep < 1.2; // separación menor al 1.2% = planas
+      emasPegadas = sep < 1.8; // separación menor al 1.8% = planas
     }
   }
 
