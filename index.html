@@ -562,6 +562,10 @@ const el = id => document.getElementById(id);
 /* ════════════════════════════════════════
    API BINANCE (con proxies CORS)
 ════════════════════════════════════════ */
+// Servidor proxy propio (Render) — primera opción, el más estable.
+// Si falla, se usan los proxies públicos de respaldo de abajo.
+const MI_PROXY = 'https://jrsignal-proxy.onrender.com';
+
 // Promise.any polyfill for older browsers
 if(!Promise.any){
   Promise.any = arr => new Promise((res,rej)=>{
@@ -576,6 +580,7 @@ async function apiFetch(url){
   
   // Race multiple proxies simultaneously
   const proxies = [
+    fetch(MI_PROXY + (url.replace(/^https?:\/\/[^/]+/,'')) + (url.includes('?')?'&':'?')+'_cb='+cb,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json();}),
     fetch(urlB,{mode:'cors',cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json();}),
     fetch('https://corsproxy.io/?url='+encodeURIComponent(urlB),{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json();}),
     fetch('https://api.allorigins.win/get?url='+encodeURIComponent(urlB),{cache:'no-store'})
@@ -593,6 +598,9 @@ async function fetchKlines(sym, tf, n){
   const sUrl='https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit='+n;
   const fUrl='https://fapi.binance.com/fapi/v1/klines?symbol='+sym+'&interval='+tf+'&limit='+n;
   const _t=Math.random().toString(36).slice(2)+'_'+Date.now();
+  // 1º: mi proxy propio de Render (el más estable)
+  try{const r=await fetch(MI_PROXY+'/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit='+n+'&_cb='+_t,{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>10&&Array.isArray(d[0]))return d;}}catch(e){}
+  // 2º en adelante: proxies públicos de respaldo
   try{const r=await fetch(sUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>10&&Array.isArray(d[0]))return d;}}catch(e){}
   try{const r=await fetch('https://corsproxy.io/?url='+encodeURIComponent(sUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
   try{const r=await fetch(fUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.length>0)return d;}}catch(e){}
@@ -604,6 +612,7 @@ async function fetchOB(sym){
   const sUrl='https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=50';
   const fUrl='https://fapi.binance.com/fapi/v1/depth?symbol='+sym+'&limit=50';
   const _t=Math.random().toString(36).slice(2)+'_'+Date.now();
+  try{const r=await fetch(MI_PROXY+'/api/v3/depth?symbol='+sym+'&limit=50&_cb='+_t,{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
   try{const r=await fetch(sUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
   try{const r=await fetch('https://corsproxy.io/?url='+encodeURIComponent(sUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
   try{const r=await fetch(fUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.bids)return d;}}catch(e){}
@@ -614,6 +623,7 @@ async function fetchPrice(sym){
   const sUrl='https://api.binance.com/api/v3/ticker/price?symbol='+sym;
   const fUrl='https://fapi.binance.com/fapi/v1/ticker/price?symbol='+sym;
   const _t=Math.random().toString(36).slice(2)+'_'+Date.now();
+  try{const r=await fetch(MI_PROXY+'/api/v3/ticker/price?symbol='+sym+'&_cb='+_t,{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
   try{const r=await fetch(sUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
   try{const r=await fetch('https://corsproxy.io/?url='+encodeURIComponent(sUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
   try{const r=await fetch(fUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
@@ -692,14 +702,28 @@ function detectarRango(c1h, c4h){
   const N = 40;
   if(!c1h || c1h.length < N) return {enRango:false};
   const tramo = c1h.slice(-N);
-  let techo = -Infinity, suelo = Infinity;
-  for(const v of tramo){ if(v.h>techo) techo=v.h; if(v.l<suelo) suelo=v.l; }
+
+  // ── MEDICIÓN ROBUSTA CON PERCENTILES (ignora velazos) ──────────
+  // En vez del máximo/mínimo absolutos (que un solo velazo distorsiona),
+  // usamos el percentil 90 como "techo" y el percentil 10 como "suelo".
+  // Así los picos extremos aislados (velazos/mechazos) quedan fuera y
+  // medimos dónde vive el precio realmente la mayor parte del tiempo.
+  function percentil(arr, p){
+    const ord = arr.slice().sort((a,b)=>a-b);
+    const idx = (p/100)*(ord.length-1);
+    const lo = Math.floor(idx), hi = Math.ceil(idx);
+    if(lo===hi) return ord[lo];
+    return ord[lo] + (ord[hi]-ord[lo])*(idx-lo); // interpolación
+  }
+  // Usamos los cierres (más estables que high/low, que tienen mechas).
+  const cierres = tramo.map(v=>v.cl);
+  const techo = percentil(cierres, 90);
+  const suelo = percentil(cierres, 10);
   const medio = (techo+suelo)/2;
   const anchoPct = (techo-suelo)/medio*100; // ancho del rango en %
 
   // Criterio 1: rango ESTRECHO. Si el precio se ha movido menos de
-  // ~6.5% entre techo y suelo en 40 velas, está comprimido (lateral).
-  // (Ajustado de 4% a 6.5% tras el caso ENA, que era lateral a ~7%.)
+  // ~6.5% (medido con percentiles) en 40 velas, está comprimido (lateral).
   const rangoEstrecho = anchoPct < 6.5;
 
   // Criterio 2: EMAs PLANAS Y PEGADAS (en tendencia se separan).
