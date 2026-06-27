@@ -746,23 +746,99 @@ function detectarRango(c1h, c4h){
   return {enRango, techo, suelo, anchoPct};
 }
 
+/* ════════════════════════════════════════════════════════
+   FASE 2 — DETECCIÓN DE RUPTURA CON VELAS JAPONESAS
+   (CAPA ADICIONAL — no toca el motor)
+   Cuando el precio está en rango y ROMPE el techo o el suelo,
+   confirmamos la ruptura con patrones de velas fuertes.
+   Patrones alcistas: Marubozu verde, Envolvente alcista, Hammer.
+   Patrones bajistas: Marubozu rojo, Envolvente bajista, Hanging Man.
+   Se DESCARTA si la vela de ruptura es un Doji (indecisión).
+════════════════════════════════════════════════════════ */
+function analizarVelaRuptura(c15, techo, suelo){
+  // Necesitamos al menos 2 velas para envolvente
+  if(!c15 || c15.length < 2) return {ruptura:false};
+  const v  = c15[c15.length-1];   // vela actual (la de ruptura)
+  const vp = c15[c15.length-2];   // vela anterior
+
+  const cuerpo   = Math.abs(v.cl - v.o);
+  const rango_v  = v.h - v.l;
+  if(rango_v <= 0) return {ruptura:false};
+  const mechaSup = v.h - Math.max(v.cl, v.o);
+  const mechaInf = Math.min(v.cl, v.o) - v.l;
+  const esVerde  = v.cl > v.o;
+  const esRojo   = v.cl < v.o;
+
+  // ── DOJI: cuerpo minúsculo (<10% del rango) → indecisión, descartar
+  const esDoji = cuerpo < rango_v * 0.10;
+  if(esDoji) return {ruptura:false, motivo:'doji'};
+
+  // ── Patrones de FUERZA ──────────────────────────────────────────
+  // Marubozu: cuerpo grande (>80% del rango), mechas mínimas
+  const marubozuVerde = esVerde && cuerpo > rango_v*0.80;
+  const marubozuRojo  = esRojo  && cuerpo > rango_v*0.80;
+  // Envolvente: el cuerpo actual envuelve al cuerpo anterior
+  const cuerpoAntAlto = Math.max(vp.cl, vp.o);
+  const cuerpoAntBajo = Math.min(vp.cl, vp.o);
+  const envolventeAlcista = esVerde && v.cl >= cuerpoAntAlto && v.o <= cuerpoAntBajo;
+  const envolventeBajista = esRojo  && v.o >= cuerpoAntAlto && v.cl <= cuerpoAntBajo;
+  // Hammer (alcista): cuerpo pequeño arriba, mecha inferior larga (>2x cuerpo)
+  const hammer = mechaInf > cuerpo*2 && mechaSup < cuerpo*0.5;
+  // Hanging Man (bajista): misma forma, pero confirmamos en contexto bajista
+  const hangingMan = mechaInf > cuerpo*2 && mechaSup < cuerpo*0.5;
+
+  // ── ¿Rompió el TECHO? → buscamos confirmación ALCISTA
+  if(v.cl > techo){
+    const patronAlcista = marubozuVerde || envolventeAlcista || (hammer && esVerde);
+    if(patronAlcista){
+      let nombre = marubozuVerde ? 'Marubozu alcista'
+                 : envolventeAlcista ? 'Envolvente alcista'
+                 : 'Hammer';
+      return {ruptura:true, dir:'LONG', patron:nombre};
+    }
+  }
+  // ── ¿Rompió el SUELO? → buscamos confirmación BAJISTA
+  if(v.cl < suelo){
+    const patronBajista = marubozuRojo || envolventeBajista || (hangingMan && esRojo);
+    if(patronBajista){
+      let nombre = marubozuRojo ? 'Marubozu bajista'
+                 : envolventeBajista ? 'Envolvente bajista'
+                 : 'Hanging Man';
+      return {ruptura:true, dir:'SHORT', patron:nombre};
+    }
+  }
+  return {ruptura:false};
+}
+
+let _rupturaInfo = null; // Fase 2: info de ruptura de rango (nivel módulo)
 function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
+  _rupturaInfo = null; // reset en cada análisis
   const c4=parseC(raw4h),c1=parseC(raw1h),c15=parseC(raw15m);
   const tf4=analyzeTF(c4,curPrice),tf1=analyzeTF(c1,curPrice),tf15=analyzeTF(c15,curPrice);
   if(!tf4) return null;
 
-  // ── FILTRO ANTI-RANGO (portero, antes del motor) ──────────────
-  // Si el mercado está lateral, no operamos. El motor de LONG/SHORT
-  // de abajo NO se toca: simplemente no llegamos a él en este caso.
+  // ── FILTRO ANTI-RANGO + RUPTURA (portero, antes del motor) ────
+  // Si el mercado está lateral, no operamos... SALVO que el precio
+  // acabe de romper el rango con una vela fuerte (Fase 2). El motor
+  // de LONG/SHORT de abajo NO se toca en ningún caso.
   const rango = detectarRango(c1, c4);
   if(rango.enRango){
-    return {
-      valid:false,
-      enRango:true,
-      reason:'Mercado en rango lateral ('+rango.anchoPct.toFixed(1)+'% de ancho) — esperar ruptura',
-      techo:rango.techo,
-      suelo:rango.suelo
-    };
+    // Fase 2: ¿hay ruptura confirmada con velas japonesas?
+    const ruptura = analizarVelaRuptura(c15, rango.techo, rango.suelo);
+    if(ruptura.ruptura){
+      // Hay ruptura confirmada → avisamos y dejamos pasar al motor
+      // para que calcule la señal a favor de la nueva tendencia.
+      _rupturaInfo = {dir:ruptura.dir, patron:ruptura.patron};
+    } else {
+      // Sigue en rango sin ruptura → ESPERAR (como antes)
+      return {
+        valid:false,
+        enRango:true,
+        reason:'Mercado en rango lateral ('+rango.anchoPct.toFixed(1)+'% de ancho) — esperar ruptura',
+        techo:rango.techo,
+        suelo:rango.suelo
+      };
+    }
   }
 
   // ── DETECCIÓN DE REBOTE ALCISTA (LONG contra tendencia bajista) ──
@@ -1438,6 +1514,9 @@ async function doAnalyze(raw){
     } else if(!sig.valid){
       applyNoSignal(sym,sig.reason||'Sin señal válida');
     } else {
+      // Fase 2: si esta señal vino de una ruptura de rango confirmada,
+      // lo marcamos en el objeto para que se muestre el aviso.
+      if(_rupturaInfo){ sig.rupturaPatron = _rupturaInfo.patron; sig.rupturaDir = _rupturaInfo.dir; }
       applySignal(sym,sig,price);
     }
     renderOB(ob,price);
