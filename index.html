@@ -540,6 +540,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 ════════════════════════════════════════ */
 let currentSymbol = 'BTCUSDT';
 let refreshTimer  = null;
+// ── v27: GUARDIA ANTI-SOLAPAMIENTO (no toca el motor) ──────────
+// Cada llamada a doAnalyze recibe un nº de secuencia creciente.
+// Solo la respuesta MÁS RECIENTE puede pintar la pantalla; las
+// rezagadas (que llegan tarde por el proxy lento) se descartan.
+// Esto evita que se mezclen banner/panel/símbolo de pasadas distintas.
+let _analyzeSeq   = 0;      // contador global de análisis
+let _analyzeBusy  = false;  // ¿hay un análisis en curso?
 let liqHmSymbol   = 'BTCUSDT';
 let liqHmTF       = '1m';
 let liqHmPoolMult = 1.5;
@@ -1503,6 +1510,10 @@ function onCoinInput(input){
    ANÁLISIS PRINCIPAL
 ════════════════════════════════════════ */
 async function doAnalyze(raw){
+  // ── v27: cada llamada toma su nº de secuencia ──
+  const mySeq = ++_analyzeSeq;
+  const isStale = () => mySeq !== _analyzeSeq; // ¿me adelantó otra llamada?
+  _analyzeBusy = true;
   // Clean input: remove USDT suffix in any format
   let sym = raw.trim().toUpperCase()
     .replace(/[/\s-]/g,'')   // remove /, space, dash
@@ -1512,6 +1523,7 @@ async function doAnalyze(raw){
   sym = sym.trim();
   if(!sym||sym.length<2){
     el('analysisText').textContent='Ingresa un símbolo válido (ej: BTC, ETH, SOL)';
+    _analyzeBusy=false;
     return;
   }
   const fullSym=sym+'USDT';
@@ -1549,6 +1561,9 @@ async function doAnalyze(raw){
       withTimeout(fetchOB(fullSym)),
       withTimeout(fetchPrice(fullSym))
     ]);
+    // ── v27: si otra llamada más reciente ya empezó, ABORTAR aquí.
+    // No pintamos NADA con datos rezagados → no se mezclan estados.
+    if(isStale()) { return; }
     const sig=computeSignal(r4h,r1h,r15m,ob,price);
     if(!sig) throw new Error('Datos insuficientes');
     if(!sig){
@@ -1567,9 +1582,11 @@ async function doAnalyze(raw){
     liqHmSymbol=fullSym;hmMiniSymbol=fullSym;
     liqHmRefresh();hmMiniRefresh();
     clearInterval(refreshTimer);
-    refreshTimer=setInterval(()=>doAnalyze(currentSymbol.replace('USDT','')),30000);
+    refreshTimer=setInterval(()=>{ if(!_analyzeBusy) doAnalyze(currentSymbol.replace('USDT','')); },30000);
     el('liveStatus').textContent='● En vivo';
   }catch(e){
+    // ── v27: una respuesta rezagada que falló NO debe pisar la pantalla
+    if(isStale()) return;
     el('liveStatus').textContent='✕ Error';
     // Check if it looks like a typo
     const sorted = sym.split('').sort().join('');
@@ -1586,7 +1603,11 @@ async function doAnalyze(raw){
     el('signalBanner').className='signal-banner sig-wait';
     console.error(e);
   }
-  btn.textContent='Analizar';btn.disabled=false;
+  // ── v27: solo la llamada más reciente restaura el botón y suelta el flag
+  if(!isStale()){
+    btn.textContent='Analizar';btn.disabled=false;
+    _analyzeBusy=false;
+  }
 }
 document.addEventListener('click',e=>{
   if(!e.target.closest('.search-wrap')) el('suggBox').classList.remove('open');
