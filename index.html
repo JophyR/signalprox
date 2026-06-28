@@ -1256,13 +1256,48 @@ function applySignal(sym,sig,curPrice){
   if(el('tCur')) el('tCur').textContent=fmt(curPrice);
 }
 
-function applyNoSignal(sym,reason){
+function applyNoSignal(sym,reason,td){
   el('signalBanner').className='signal-banner sig-wait';
   el('signalPair').textContent=sym+'/USDT · Sin señal';
   el('signalPair').style.color='#854F0B';
   el('signalDir').textContent='⏳ ESPERAR';
   el('signalMeta').textContent=reason;
   el('analysisText').textContent=reason+'. Las 3 temporalidades deben alinearse para una entrada válida.';
+
+  // ── v28: repintar el panel/indicadores con los datos REALES de este
+  //         activo (calculados con analyzeTF, sin tocar el motor). Antes
+  //         se quedaban congelados del activo anterior que SÍ dio señal.
+  function setTFBox(id,dir,score){
+    const box=el(id);if(!box)return;
+    box.className='trend-tf '+(dir==='LONG'?'tf-long':dir==='SHORT'?'tf-short':'tf-neut');
+    const d=box.querySelector('.trend-tf-dir');
+    if(d){d.textContent=dir;d.style.color=dir==='LONG'?'#3B6D11':dir==='SHORT'?'#A32D2D':'#854F0B';}
+    const s=box.querySelector('.trend-tf-score');if(s) s.textContent='Score: '+score;
+  }
+  function setTrendInd(valId,badgeId,val,badge,cls){
+    if(el(valId)) el(valId).textContent=val;
+    if(el(badgeId)){el(badgeId).textContent=badge;el(badgeId).className='trend-ind-badge badge-'+cls;}
+  }
+  // Limpiar SIEMPRE los niveles de entrada/TP/SL (no hay señal → no hay niveles)
+  ['entryVal','tp1val','tp2val','tp3val','slval','levVal','rsiVal','macdVal','emaVal','atrVal'].forEach(id=>{
+    const e=el(id); if(e) e.textContent='...';
+  });
+
+  if(td && td.tf4){
+    const p=td.price;
+    setTFBox('trendBox4h', td.tf4.dir,  td.tf4.score.toFixed(1));
+    setTFBox('trendBox1h', td.tf1?td.tf1.dir:'N/D',  td.tf1?td.tf1.score.toFixed(1):'—');
+    setTFBox('trendBox15m',td.tf15?td.tf15.dir:'N/D',td.tf15?td.tf15.score.toFixed(1):'—');
+    // Caja "general": sin señal válida → refleja el 4H como dirección dominante
+    setTFBox('trendBoxGen', td.tf4.dir, 'sin señal');
+    const e50=td.tf4.e50, e200=td.tf4.e200, rsi=td.tf4.rsi, macdBull=td.tf4.macdBull;
+    setTrendInd('tEma50','tEma50B',fmt(e50),p>e50?'Sobre':'Bajo',p>e50?'bull':'bear');
+    setTrendInd('tEma200','tEma200B',fmt(e200),p>e200?'Sobre':'Bajo',p>e200?'bull':'bear');
+    setTrendInd('tRsi','tRsiB',rsi.toFixed(1),rsi<35?'Sobreventa':rsi>68?'Sobrecompra':'Neutro',rsi<40?'bull':rsi>65?'bear':'neut');
+    setTrendInd('tMacd','tMacdB',macdBull?'Alcista':'Bajista',macdBull?'Cruce ↑':'Cruce ↓',macdBull?'bull':'bear');
+    if(el('tCur')) el('tCur').textContent=fmt(p);
+    if(el('trendWhy')){el('trendWhy').textContent=reason+'. Las 3 temporalidades deben alinearse para una entrada válida.';el('trendWhy').style.borderLeftColor='#BA7517';}
+  }
 }
 
 /* ════════════════════════════════════════
@@ -1566,10 +1601,15 @@ async function doAnalyze(raw){
     if(isStale()) { return; }
     const sig=computeSignal(r4h,r1h,r15m,ob,price);
     if(!sig) throw new Error('Datos insuficientes');
+    // ── v28: datos de tendencia reales de ESTE activo, para repintar el
+    //         panel cuando no hay señal (usa funciones globales, no toca el motor)
+    const _td = (()=>{ try{
+      return { price, tf4:analyzeTF(parseC(r4h),price), tf1:analyzeTF(parseC(r1h),price), tf15:analyzeTF(parseC(r15m),price) };
+    }catch(e){ return null; } })();
     if(!sig){
-      applyNoSignal(sym,'Error calculando señal');
+      applyNoSignal(sym,'Error calculando señal',_td);
     } else if(!sig.valid){
-      applyNoSignal(sym,sig.reason||'Sin señal válida');
+      applyNoSignal(sym,sig.reason||'Sin señal válida',_td);
     } else {
       // Fase 2: si esta señal vino de una ruptura de rango confirmada,
       // lo marcamos en el objeto para que se muestre el aviso.
