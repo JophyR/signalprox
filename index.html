@@ -653,6 +653,34 @@ function calcATR(candles,n=14){
   for(let i=n;i<tr.length;i++) atr=(atr*(n-1)+tr[i])/n;
   return atr;
 }
+/* ════════════════════════════════════════════════════════
+   AVISO DE VOLATILIDAD EXTREMA (CAPA ADICIONAL — no toca el motor)
+   Compara la volatilidad RECIENTE (últimas velas) contra la
+   volatilidad NORMAL del activo (rango "true range" típico).
+   Si la reciente está muy por encima de lo normal → velazos.
+   Devuelve nivel: 'normal', 'alta' o 'extrema'.
+════════════════════════════════════════════════════════ */
+function analizarVolatilidad(candles){
+  if(!candles || candles.length < 30) return {nivel:'normal'};
+  // True range de cada vela
+  const tr = candles.slice(1).map((c,i)=>Math.max(
+    c.h-c.l, Math.abs(c.h-candles[i].cl), Math.abs(c.l-candles[i].cl)
+  ));
+  // Volatilidad NORMAL: mediana del true range de las últimas ~40 velas
+  const ventana = tr.slice(-40);
+  const ordenado = ventana.slice().sort((a,b)=>a-b);
+  const mediana = ordenado[Math.floor(ordenado.length/2)] || 0.0000001;
+  // Volatilidad RECIENTE: el true range más grande de las últimas 3 velas
+  const recientes = tr.slice(-3);
+  const maxReciente = Math.max(...recientes);
+  // Cuántas veces más grande es el velazo reciente vs lo normal
+  const ratio = maxReciente / mediana;
+  // Umbrales: >3x = alta, >5x = extrema
+  let nivel = 'normal';
+  if(ratio >= 5) nivel = 'extrema';
+  else if(ratio >= 3) nivel = 'alta';
+  return {nivel, ratio};
+}
 function calcMACD(cls){const e12=calcEMA(cls,12),e26=calcEMA(cls,26),macd=e12.map((v,i)=>v-e26[i]),sig=calcEMA(macd,9);return{macd,signal:sig,hist:macd.map((v,i)=>v-sig[i])};}
 function parseC(raw){return raw.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],cl:+k[4],v:+k[5]}));}
 
@@ -811,9 +839,13 @@ function analizarVelaRuptura(c15, techo, suelo){
 }
 
 let _rupturaInfo = null; // Fase 2: info de ruptura de rango (nivel módulo)
+let _volatilidad = null; // Aviso de volatilidad (nivel módulo)
 function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
   _rupturaInfo = null; // reset en cada análisis
+  _volatilidad = null;
   const c4=parseC(raw4h),c1=parseC(raw1h),c15=parseC(raw15m);
+  // Aviso de volatilidad: medimos sobre las velas de 15m (las que pegan velazos)
+  if(c15 && c15.length >= 30){ _volatilidad = analizarVolatilidad(c15); }
   const tf4=analyzeTF(c4,curPrice),tf1=analyzeTF(c1,curPrice),tf15=analyzeTF(c15,curPrice);
   if(!tf4) return null;
 
@@ -1090,7 +1122,11 @@ function applySignal(sym,sig,curPrice){
     if(sig.rupturaDir==='LONG') _rupturaTxt = '🟢⬆️ RUPTURA ALCISTA confirmada ('+sig.rupturaPatron+') · ';
     else _rupturaTxt = '🔴⬇️ RUPTURA BAJISTA confirmada ('+sig.rupturaPatron+') · ';
   }
-  el('signalMeta').textContent=_rupturaTxt+(sig.isBounce?'⚡ ':'')+sig.strLabel+' · '+sig.confPct+'% · Precio: '+fmt(curPrice);
+  // Aviso de volatilidad (capa adicional)
+  let _volatTxt = '';
+  if(sig.volatNivel==='extrema') _volatTxt = '🔴 VOLATILIDAD EXTREMA — mejor evitar la entrada · ';
+  else if(sig.volatNivel==='alta') _volatTxt = '🟠 Volatilidad alta — opera con extrema precaución · ';
+  el('signalMeta').textContent=_volatTxt+_rupturaTxt+(sig.isBounce?'⚡ ':'')+sig.strLabel+' · '+sig.confPct+'% · Precio: '+fmt(curPrice);
   el('rrVal').textContent='1:1 / 1:2 / 1:3';
 
   // Niveles
@@ -1523,6 +1559,7 @@ async function doAnalyze(raw){
       // Fase 2: si esta señal vino de una ruptura de rango confirmada,
       // lo marcamos en el objeto para que se muestre el aviso.
       if(_rupturaInfo){ sig.rupturaPatron = _rupturaInfo.patron; sig.rupturaDir = _rupturaInfo.dir; }
+      if(_volatilidad){ sig.volatNivel = _volatilidad.nivel; }
       applySignal(sym,sig,price);
     }
     renderOB(ob,price);
