@@ -1084,7 +1084,13 @@ function applySignal(sym,sig,curPrice){
   el('signalPair').textContent='Señal activa · '+sym+'/USDT · 4H+1H+15M';
   el('signalPair').style.color=L?'#3B6D11':'#A32D2D';
   el('signalDir').textContent=sig.isBounce?('LONG ↑ · REBOTE '+sig.aligned+'/5'):(L?'LONG ↑':'SHORT ↓')+' · '+sig.aligned+'/3 TF';
-  el('signalMeta').textContent=(sig.isBounce?'⚡ ':'')+sig.strLabel+' · '+sig.confPct+'% · Precio: '+fmt(curPrice);
+  // Fase 2: aviso de ruptura de rango (si esta señal vino de una ruptura)
+  let _rupturaTxt = '';
+  if(sig.rupturaPatron){
+    if(sig.rupturaDir==='LONG') _rupturaTxt = '🟢⬆️ RUPTURA ALCISTA confirmada ('+sig.rupturaPatron+') · ';
+    else _rupturaTxt = '🔴⬇️ RUPTURA BAJISTA confirmada ('+sig.rupturaPatron+') · ';
+  }
+  el('signalMeta').textContent=_rupturaTxt+(sig.isBounce?'⚡ ':'')+sig.strLabel+' · '+sig.confPct+'% · Precio: '+fmt(curPrice);
   el('rrVal').textContent='1:1 / 1:2 / 1:3';
 
   // Niveles
