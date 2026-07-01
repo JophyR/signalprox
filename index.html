@@ -299,6 +299,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       </div>
     </div>
 
+    <!-- v29: ESTIMACIÓN ORIENTATIVA DE TIEMPO A TP1 (honesta, basada en ATR) -->
+    <div id="etaBox" style="display:none;align-items:center;gap:8px;margin:8px 2px 0;padding:7px 12px;
+         background:#FFF4E5;border:1px solid #F0B860;border-left:4px solid #E8880C;border-radius:8px;">
+      <span style="font-size:15px;">⏳</span>
+      <span id="etaText" style="color:#B5610A;font-size:12px;font-weight:600;"></span>
+      <span id="etaTipo" style="color:#9A7B4F;font-size:11px;font-weight:500;"></span>
+      <span style="color:#B99;font-size:10px;font-style:italic;margin-left:auto;">estimación orientativa · el mercado manda</span>
+    </div>
+
     <!-- CONFLUENCIA -->
     <div class="conf-card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
@@ -1114,6 +1123,41 @@ function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
 /* ════════════════════════════════════════
    ACTUALIZAR UI
 ════════════════════════════════════════ */
+// ── v29: ESTIMACIÓN ORIENTATIVA DE TIEMPO A TP1 ────────────────────
+// Honesta por diseño: sale del ATR real (mov. medio por vela de 15m) y
+// la distancia real a TP1. Se muestra como RANGO, nunca como número
+// único, con holgura porque el precio nunca va en línea recta.
+// NO toca el motor: solo lee datos que el motor ya calculó.
+function estimarTiempoTP1(atrPct, tp1D, baseTF){
+  if(!atrPct || atrPct<=0 || !tp1D || tp1D<=0) return null;
+  const velasDirecto = tp1D / atrPct;        // velas si fuera directo
+  const TF_MIN = 15;                          // ATR se calcula sobre 15m
+  const minLo = velasDirecto * 1.2 * TF_MIN;  // extremo más directo
+  const minHi = velasDirecto * 2.5 * TF_MIN;  // extremo con zigzag
+  const fmt = m => {
+    if(m < 60) return (Math.round(m/5)*5) + 'min';
+    const h = m/60;
+    return (h % 1 === 0 ? h.toFixed(0) : h.toFixed(1)) + 'h';
+  };
+  // tipo de señal según de dónde nace (contexto honesto, no promesa)
+  let tipo = '';
+  if(baseTF==='15m') tipo = '· señal rápida (15M)';
+  else if(baseTF==='1h') tipo = '· señal media (1H)';
+  else if(baseTF==='4h') tipo = '· señal lenta (4H)';
+  return { texto: 'Orientativo TP1: ~'+fmt(minLo)+' – '+fmt(minHi), tipo };
+}
+function pintarETA(eta){
+  const box=el('etaBox');
+  if(!box) return;
+  if(eta){
+    el('etaText').textContent = eta.texto;
+    el('etaTipo').textContent = eta.tipo || '';
+    box.style.display='flex';
+  } else {
+    box.style.display='none';
+  }
+}
+
 function applySignal(sym,sig,curPrice){
   const L=sig.isLong;
   const dc={g:'#639922',y:'#BA7517',r:'#E24B4A'};
@@ -1254,6 +1298,17 @@ function applySignal(sym,sig,curPrice){
   if(el('tSup')) el('tSup').textContent=fmt(sig.nearSup);
   if(el('tRes')) el('tRes').textContent=fmt(sig.nearRes);
   if(el('tCur')) el('tCur').textContent=fmt(curPrice);
+
+  // ── v29: estimación orientativa de tiempo a TP1 ──
+  // Deducimos el TF base sin tocar el motor, con campos que sig ya trae:
+  //  rebote → nace del corto (15m/1h) = rápida
+  //  aligned 2 con 4H neutral → 1H+15M = media
+  //  aligned 3 → 4H = lenta
+  let _baseTF = '4h';
+  if(sig.isBounce) _baseTF='15m';
+  else if(sig.aligned===2) _baseTF='1h';
+  else _baseTF='4h';
+  pintarETA(estimarTiempoTP1(sig.atrPct, sig.tp1D, _baseTF));
 }
 
 function applyNoSignal(sym,reason,td){
@@ -1282,6 +1337,8 @@ function applyNoSignal(sym,reason,td){
   ['entryVal','tp1val','tp2val','tp3val','slval','levVal','rsiVal','macdVal','emaVal','atrVal'].forEach(id=>{
     const e=el(id); if(e) e.textContent='...';
   });
+  // v29: ocultar la estimación de tiempo (no hay TP que estimar sin señal)
+  if(el('etaBox')) el('etaBox').style.display='none';
 
   if(td && td.tf4){
     const p=td.price;
