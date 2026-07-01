@@ -235,6 +235,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   </div>
 </div>
 
+<!-- v30: BARRA DE HORARIOS DE BOLSAS (contexto global, versión simple sin festivos) -->
+<div id="mktBar" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+     padding:6px 16px;margin:0 0 2px;background:#F7F6F2;border-bottom:1px solid #E5E2DA;
+     font-size:12px;color:#555;">
+  <span style="font-weight:600;color:#888;font-size:11px;">MERCADOS:</span>
+  <span class="mkt-item" id="mktNYSE"></span>
+  <span class="mkt-item" id="mktSSE"></span>
+  <span class="mkt-item" id="mktHKSE"></span>
+  <span id="mktHint" style="margin-left:auto;font-size:11px;font-style:italic;color:#999;"></span>
+</div>
+
 <div class="main-grid">
 
   <!-- ═══ COLUMNA IZQUIERDA ═══ -->
@@ -1756,6 +1767,56 @@ function setDomTF(tf,btn){
 /* ════════════════════════════════════════
    INIT
 ════════════════════════════════════════ */
+// ── v30: RELOJ DE HORARIOS DE BOLSAS ───────────────────────────────
+// Versión simple: horarios normales de sesión, SIN festivos ni ajuste
+// verano/invierno. Puede fallar en días festivos (ej. Año Nuevo Chino).
+// Usa la hora UTC (fiable) y convierte a cada zona con offset fijo.
+// NO toca el motor: es un reloj independiente de contexto.
+function estadoBolsas(){
+  const now = new Date();
+  const utcMin = now.getUTCHours()*60 + now.getUTCMinutes(); // minutos UTC del día
+  const dow = now.getUTCDay(); // 0=dom .. 6=sáb
+  const finde = (dow===0 || dow===6);
+
+  // Cada bolsa: offset horario fijo (min) respecto UTC.
+  //  open/close = rango total de sesión (hora local de la bolsa)
+  //  lunch = franja de pausa de almuerzo [inicio,fin] (o null si no tiene)
+  //  NYSE: UTC-4 (verano EDT). 9:30-16:00, sin pausa
+  //  SSE Shanghái: UTC+8. 9:30-15:00, pausa 11:30-13:00
+  //  HKSE Hong Kong: UTC+8. 9:30-16:00, pausa 12:00-13:00
+  const bolsas = [
+    { id:'mktNYSE', emoji:'🗽', nombre:'NYSE', off:-4*60, open:570, close:960, lunch:null },
+    { id:'mktSSE',  emoji:'🏯', nombre:'SSE',  off: 8*60, open:570, close:900, lunch:[690,780] },
+    { id:'mktHKSE', emoji:'🐼', nombre:'HKSE', off: 8*60, open:570, close:960, lunch:[720,780] },
+  ];
+
+  let algunaAbierta=false;
+  bolsas.forEach(b=>{
+    let localMin = ((utcMin + b.off) % 1440 + 1440) % 1440;
+    const enSesion = !finde && localMin>=b.open && localMin<b.close;
+    const enPausa  = enSesion && b.lunch && localMin>=b.lunch[0] && localMin<b.lunch[1];
+    const abierta  = enSesion && !enPausa;
+    if(abierta) algunaAbierta=true;
+
+    let punto, txt, color;
+    if(abierta){ punto='🟢'; txt='abierta'; color='#3B6D11'; }
+    else if(enPausa){ punto='🟡'; txt='abierta · pausa de almuerzo'; color='#BA7517'; }
+    else { punto='🔴'; txt='cerrada'; color='#C0392B'; }
+
+    const e = el(b.id);
+    if(e){
+      e.innerHTML = b.emoji+' '+punto+' <span style="color:'+color+';font-weight:600;">'+b.nombre+' '+txt+'</span>';
+    }
+  });
+
+  const hint = el('mktHint');
+  if(hint){
+    if(finde) hint.textContent = 'Fin de semana · bolsas cerradas · cripto suele lateral/velazos';
+    else if(!algunaAbierta) hint.textContent = 'Todas cerradas o en pausa · posible baja liquidez';
+    else hint.textContent = '';
+  }
+}
+
 renderDom('24h');
 window.addEventListener('load',()=>{
   // Remember last analyzed coin using sessionStorage
@@ -1765,6 +1826,9 @@ window.addEventListener('load',()=>{
   hmMiniRefresh();
   setInterval(liqHmRefresh,20000);
   setInterval(hmMiniRefresh,25000);
+  // v30: reloj de bolsas — pintar ya y refrescar cada minuto
+  estadoBolsas();
+  setInterval(estadoBolsas,60000);
 });
 </script>
 </body>
