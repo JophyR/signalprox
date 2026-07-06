@@ -567,6 +567,12 @@ let refreshTimer  = null;
 // Esto evita que se mezclen banner/panel/símbolo de pasadas distintas.
 let _analyzeSeq   = 0;      // contador global de análisis
 let _analyzeBusy  = false;  // ¿hay un análisis en curso?
+// ── v33: TERMÓMETRO BTC (sesgo de mercado) ──────────────────────
+// Guardamos la tendencia de BTC en 4H y la reutilizamos unos minutos.
+// Sirve para avisar cuando una señal va CONTRA el sesgo del mercado.
+// Usa analyzeTF (lógica del motor) sin modificar el motor.
+let _btcDir4h   = null;   // 'LONG' | 'SHORT' | 'NEUTRAL'
+let _btcDirTime = 0;      // timestamp de la última consulta
 let liqHmSymbol   = 'BTCUSDT';
 let liqHmTF       = '1m';
 let liqHmPoolMult = 1.5;
@@ -953,7 +959,7 @@ function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
       const entry = nearBidWall ? topBid.p : curPrice*0.9985;
       // SL más ajustado para rebotes (solo 0.8-1.5x ATR)
       const slDist = Math.max(atrPct*0.9, 0.6);
-      const tp1D=slDist*1.0, tp2D=slDist*2.0, tp3D=slDist*3.0;
+      const tp1D=1.0, tp2D=2.0, tp3D=3.0; // v33: TP fijos 1/2/3% (validado con datos reales)
       const sl =entry*(1-slDist/100);
       const tp1=entry*(1+tp1D/100);
       const tp2=entry*(1+tp2D/100);
@@ -1017,7 +1023,7 @@ function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
         entry=cands.length>0?cands[0]:curPrice*1.002;
       }
       let slDist=Math.max(Math.min(atrPct*1.1,2.5),0.8);
-      const tp1D=slDist,tp2D=slDist*2,tp3D=slDist*3;
+      const tp1D=1.0,tp2D=2.0,tp3D=3.0; // v33: TP fijos 1/2/3%
       const sl=isLong?entry*(1-slDist/100):entry*(1+slDist/100);
       const tp1=isLong?entry*(1+tp1D/100):entry*(1-tp1D/100);
       const tp2=isLong?entry*(1+tp2D/100):entry*(1-tp2D/100);
@@ -1099,7 +1105,7 @@ function computeSignal(raw4h,raw1h,raw15m,ob,curPrice){
   let slDist=Math.max(Math.min(atrPct*1.1,2.5),0.8);
   if(isLong&&nearSup<entry){const d=(entry-nearSup)/entry*100;if(d>0.3&&d<3) slDist=d+0.15;}
   if(!isLong&&nearRes>entry){const d=(nearRes-entry)/entry*100;if(d>0.3&&d<3) slDist=d+0.15;}
-  const tp1D=slDist*1.0,tp2D=slDist*2.0,tp3D=slDist*3.0;
+  const tp1D=1.0,tp2D=2.0,tp3D=3.0; // v33: TP fijos 1/2/3%
   const sl =isLong?entry*(1-slDist/100):entry*(1+slDist/100);
   const tp1=isLong?entry*(1+tp1D/100):entry*(1-tp1D/100);
   const tp2=isLong?entry*(1+tp2D/100):entry*(1-tp2D/100);
@@ -1188,7 +1194,11 @@ function applySignal(sym,sig,curPrice){
   let _volatTxt = '';
   if(sig.volatNivel==='extrema') _volatTxt = '🔴 VOLATILIDAD EXTREMA — mejor evitar la entrada · ';
   else if(sig.volatNivel==='alta') _volatTxt = '🟠 Volatilidad alta — opera con extrema precaución · ';
-  el('signalMeta').textContent=_volatTxt+_rupturaTxt+(sig.isBounce?'⚡ ':'')+sig.strLabel+' · '+sig.confPct+'% · Precio: '+fmt(curPrice);
+  // v33: aviso de SESGO DE MERCADO (señal contra la tendencia de BTC en 4H)
+  let _sesgoTxt = '';
+  if(sig.btcDir==='LONG' && !sig.isLong)      _sesgoTxt = '⚠️ SHORT en mercado alcista — cuidado · ';
+  else if(sig.btcDir==='SHORT' && sig.isLong) _sesgoTxt = '⚠️ LONG en mercado bajista — cuidado · ';
+  el('signalMeta').textContent=_sesgoTxt+_volatTxt+_rupturaTxt+(sig.isBounce?'⚡ ':'')+sig.strLabel+' · '+sig.confPct+'% · Precio: '+fmt(curPrice);
   el('rrVal').textContent='1:1 / 1:2 / 1:3';
 
   // Niveles
@@ -1674,6 +1684,18 @@ async function doAnalyze(raw){
     const _td = (()=>{ try{
       return { price, tf4:analyzeTF(parseC(r4h),price), tf1:analyzeTF(parseC(r1h),price), tf15:analyzeTF(parseC(r15m),price) };
     }catch(e){ return null; } })();
+    // ── v33: actualizar termómetro BTC (sesgo de mercado) ──
+    try{
+      if(fullSym==='BTCUSDT' && _td && _td.tf4){
+        // el activo analizado ES BTC → usamos su propia tendencia, gratis
+        _btcDir4h = _td.tf4.dir; _btcDirTime = Date.now();
+      } else if(Date.now()-_btcDirTime > 180000){
+        // cache de BTC caducada (>3 min) → consultar BTC en paralelo
+        withTimeout(fetchKlines('BTCUSDT','4h',210)).then(bt=>{
+          try{ _btcDir4h = analyzeTF(parseC(bt), 0).dir; _btcDirTime = Date.now(); }catch(e){}
+        }).catch(()=>{});
+      }
+    }catch(e){}
     if(!sig){
       applyNoSignal(sym,'Error calculando señal',_td);
     } else if(!sig.valid){
@@ -1683,6 +1705,8 @@ async function doAnalyze(raw){
       // lo marcamos en el objeto para que se muestre el aviso.
       if(_rupturaInfo){ sig.rupturaPatron = _rupturaInfo.patron; sig.rupturaDir = _rupturaInfo.dir; }
       if(_volatilidad){ sig.volatNivel = _volatilidad.nivel; }
+      // v33: sesgo de mercado — ¿la señal va contra la tendencia de BTC?
+      sig.btcDir = _btcDir4h;
       applySignal(sym,sig,price);
     }
     renderOB(ob,price);
