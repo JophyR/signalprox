@@ -222,6 +222,47 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .dom-pill { background: #f5f5f0; border-radius: 6px; padding: 4px; text-align: center; }
 .dom-pill-val { font-size: 11px; font-weight: 600; }
 .dom-pill-lbl { font-size: 9px; color: #888; }
+/* ═══════════════════════════════════════════════════════════
+   v35: RESPONSIVE MÓVIL
+   Orden en móvil: barra activo → señal → PE/TP/SL/Apal → tendencia.
+   Las dos columnas se apilan (izquierda primero, derecha después).
+   No toca ninguna lógica: solo reorganiza la presentación.
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Una sola columna: se apila todo en vertical */
+  .main-grid { grid-template-columns: 1fr; gap: 10px; padding: 8px; }
+  .left-col  { order: 1; }   /* izquierda primero (señal, niveles, tendencia) */
+  .right-col { order: 2; }   /* derecha después (indicadores, liquidaciones, OB) */
+
+  /* Cabecera y barra de bolsas más compactas */
+  .topbar { padding: 8px 12px; flex-wrap: wrap; }
+  .logo { font-size: 16px; }
+  #mktBar { font-size: 11px; gap: 10px; padding: 5px 12px; flex-wrap: wrap; }
+  #mktBar #mktHint { display: none; }  /* ocultar el hint largo en móvil */
+
+  /* Niveles (PE/TP/SL/Apal): de 6 columnas a 3 en móvil, 2 en pantalla pequeña */
+  .levels { grid-template-columns: repeat(3, minmax(0,1fr)) !important; }
+
+  /* Tendencia del mercado: 2x2 en vez de 4 en fila */
+  .trend-tfs { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+
+  /* Texto del banner un poco más grande para legibilidad */
+  #signalDir { font-size: 17px !important; }
+  #signalMeta { font-size: 11px !important; }
+
+  /* Indicadores de la derecha en 2 columnas para aprovechar ancho */
+  .card { padding: 10px; }
+
+  /* Evitar scroll horizontal */
+  body { overflow-x: hidden; }
+  * { max-width: 100%; box-sizing: border-box; }
+}
+
+/* Móviles pequeños */
+@media (max-width: 420px) {
+  .levels { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+  #mktBar .mkt-item { font-size: 10px; }
+}
 </style>
 </head>
 <body>
@@ -1149,8 +1190,11 @@ function estimarTiempoTP1(atrPct, tp1D, baseTF){
   if(!atrPct || atrPct<=0 || !tp1D || tp1D<=0) return null;
   const velasDirecto = tp1D / atrPct;        // velas si fuera directo
   const TF_MIN = 15;                          // ATR se calcula sobre 15m
-  const minLo = velasDirecto * 1.2 * TF_MIN;  // extremo más directo
-  const minHi = velasDirecto * 2.5 * TF_MIN;  // extremo con zigzag
+  // v34: RECALIBRADO con datos reales. La estimación anterior (1.2-2.5)
+  // subestimaba ~11x el tiempo real. Factores nuevos: 8 (optimista) y 22
+  // (realista con zigzag). El precio casi nunca va directo al TP.
+  const minLo = velasDirecto * 8  * TF_MIN;   // extremo más directo
+  const minHi = velasDirecto * 22 * TF_MIN;   // extremo con zigzag
   const fmt = m => {
     if(m < 60) return (Math.round(m/5)*5) + 'min';
     const h = m/60;
@@ -1161,7 +1205,7 @@ function estimarTiempoTP1(atrPct, tp1D, baseTF){
   if(baseTF==='15m') tipo = '· señal rápida (15M)';
   else if(baseTF==='1h') tipo = '· señal media (1H)';
   else if(baseTF==='4h') tipo = '· señal lenta (4H)';
-  return { texto: 'Orientativo TP1: ~'+fmt(minLo)+' – '+fmt(minHi), tipo };
+  return { texto: 'Orientativo TP1: ~'+fmt(minLo)+' – '+fmt(minHi)+' (muy variable)', tipo };
 }
 function pintarETA(eta){
   const box=el('etaBox');
@@ -1198,7 +1242,13 @@ function applySignal(sym,sig,curPrice){
   let _sesgoTxt = '';
   if(sig.btcDir==='LONG' && !sig.isLong)      _sesgoTxt = '⚠️ SHORT en mercado alcista — cuidado · ';
   else if(sig.btcDir==='SHORT' && sig.isLong) _sesgoTxt = '⚠️ LONG en mercado bajista — cuidado · ';
-  el('signalMeta').textContent=_sesgoTxt+_volatTxt+_rupturaTxt+(sig.isBounce?'⚡ ':'')+sig.strLabel+' · '+sig.confPct+'% · Precio: '+fmt(curPrice);
+  // v35: aviso de SL CEÑIDO — si el SL está más cerca que el ruido típico (ATR),
+  // es probable que un movimiento normal lo toque. Capa visual, no toca el motor.
+  let _slTxt = '';
+  if(sig.slDist && sig.atrPct && sig.slDist < sig.atrPct*0.5){
+    _slTxt = '⚠️ SL ceñido — riesgo de que el ruido lo toque · ';
+  }
+  el('signalMeta').textContent=_slTxt+_sesgoTxt+_volatTxt+_rupturaTxt+(sig.isBounce?'⚡ ':'')+sig.strLabel+' · '+sig.confPct+'% · Precio: '+fmt(curPrice);
   el('rrVal').textContent='1:1 / 1:2 / 1:3';
 
   // Niveles
