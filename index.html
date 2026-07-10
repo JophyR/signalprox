@@ -1852,14 +1852,27 @@ function estadoBolsas(){
   const dow = now.getUTCDay(); // 0=dom .. 6=sáb
   const finde = (dow===0 || dow===6);
 
-  // Cada bolsa: offset horario fijo (min) respecto UTC.
-  //  open/close = rango total de sesión (hora local de la bolsa)
-  //  lunch = franja de pausa de almuerzo [inicio,fin] (o null si no tiene)
-  //  NYSE: UTC-4 (verano EDT). 9:30-16:00, sin pausa
-  //  SSE Shanghái: UTC+8. 9:30-15:00, pausa 11:30-13:00
-  //  HKSE Hong Kong: UTC+8. 9:30-16:00, pausa 12:00-13:00
+  // ── v37: horario verano/invierno de EEUU (NYSE) ──
+  // EEUU usa horario de verano (EDT, UTC-4) del 2º domingo de marzo
+  // al 1er domingo de noviembre; el resto es invierno (EST, UTC-5).
+  // China y Hong Kong NO cambian de horario (siempre UTC+8).
+  function nyseEsVerano(d){
+    const y = d.getUTCFullYear();
+    // 2º domingo de marzo (a las 2:00 hora local ~ 7:00 UTC)
+    const marzo = new Date(Date.UTC(y,2,1));
+    let dom2mar = 1 + ((7 - marzo.getUTCDay())%7) + 7; // día del 2º domingo
+    const inicioVerano = Date.UTC(y,2,dom2mar,7,0);
+    // 1er domingo de noviembre
+    const nov = new Date(Date.UTC(y,10,1));
+    let dom1nov = 1 + ((7 - nov.getUTCDay())%7);
+    const finVerano = Date.UTC(y,10,dom1nov,6,0);
+    const t = d.getTime();
+    return t>=inicioVerano && t<finVerano;
+  }
+  const nyseOff = nyseEsVerano(now) ? -4*60 : -5*60; // EDT o EST
+
   const bolsas = [
-    { id:'mktNYSE', emoji:'🗽', nombre:'NYSE', off:-4*60, open:570, close:960, lunch:null },
+    { id:'mktNYSE', emoji:'🗽', nombre:'NYSE', off:nyseOff, open:570, close:960, lunch:null },
     { id:'mktSSE',  emoji:'🏯', nombre:'SSE',  off: 8*60, open:570, close:900, lunch:[690,780] },
     { id:'mktHKSE', emoji:'🐼', nombre:'HKSE', off: 8*60, open:570, close:960, lunch:[720,780] },
   ];
