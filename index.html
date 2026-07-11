@@ -697,12 +697,12 @@ async function fetchPrice(sym){
   const sUrl='https://api.binance.com/api/v3/ticker/price?symbol='+sym;
   const fUrl='https://fapi.binance.com/fapi/v1/ticker/price?symbol='+sym;
   const _t=Math.random().toString(36).slice(2)+'_'+Date.now();
-  try{const r=await fetch(MI_PROXY+'/api/v3/ticker/price?symbol='+sym+'&_cb='+_t,{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch(sUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?url='+encodeURIComponent(sUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch(fUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch('https://corsproxy.io/?url='+encodeURIComponent(fUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0.00001)return p;}}catch(e){}
-  try{const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();const p=parseFloat(JSON.parse(d.contents).price);if(p>0.00001)return p;}}catch(e){}
+  try{const r=await fetch(MI_PROXY+'/api/v3/ticker/price?symbol='+sym+'&_cb='+_t,{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0)return p;}}catch(e){}
+  try{const r=await fetch(sUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0)return p;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?url='+encodeURIComponent(sUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0)return p;}}catch(e){}
+  try{const r=await fetch(fUrl+'&_cb='+_t,{mode:'cors',cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0)return p;}}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?url='+encodeURIComponent(fUrl+'&_cb='+_t),{cache:'no-store'});if(r.ok){const d=await r.json();const p=parseFloat(d.price);if(p>0)return p;}}catch(e){}
+  try{const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(fUrl));if(r.ok){const d=await r.json();const p=parseFloat(JSON.parse(d.contents).price);if(p>0)return p;}}catch(e){}
   throw new Error('Par no encontrado: '+sym);
 }
 const fetchTop    = ()         => apiFetch('https://api.binance.com/api/v3/ticker/24hr').then(data=>
@@ -1776,7 +1776,7 @@ async function doAnalyze(raw){
     const possibleMatch = commonPairs.find(p=>p.split('').sort().join('')===sorted);
     const typoHint = possibleMatch ? ' ¿Quisiste decir '+possibleMatch+'?' : '';
     const errMsg = e.message.includes('Par no encontrado')||e.message.includes('Timeout')||e.message.includes('fallaron')
-      ? '❌ '+sym+'/USDT no encontrado en Binance.'+typoHint+' Verifica el símbolo e intenta de nuevo.'
+      ? '❌ '+sym+'/USDT no encontrado en Binance ni BingX.'+typoHint+' Verifica el símbolo e intenta de nuevo.'
       : '⚠️ Error de conexión. Intenta de nuevo en unos segundos.';
     el('analysisText').textContent=errMsg;
     el('analysisTags').innerHTML='<span class="tag tag-bear">Par no encontrado</span>';
